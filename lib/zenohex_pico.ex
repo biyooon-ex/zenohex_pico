@@ -1,18 +1,5 @@
 defmodule ZenohexPico do
-  @moduledoc """
-  Documentation for `ZenohexPico`.
-  """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> ZenohexPico.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def start do
+    :ok
   end
 end
