@@ -1,5 +1,7 @@
 // OK_ATOM が定義されているヘッダ
 #include <defaultatoms.h>
+//
+#include <erl_nif_priv.h>
 // Nif 構造体が定義されているヘッダ
 #include <nifs.h>
 // REGISTER_NIF_COLLECTION が定義されているヘッダ
@@ -11,15 +13,55 @@
 
 #include <zenoh-pico.h>
 
+typedef struct {
+  z_owned_config_t config;
+} ZenohexPicoConfigResource;
+
+static ErlNifResourceType *config_resource_type;
+
+static void config_dtor(ErlNifEnv *env, void *obj)
+{
+  ZenohexPicoConfigResource *res = (ZenohexPicoConfigResource *) obj;
+  z_drop(z_move(res->config));
+}
+
+static const ErlNifResourceTypeInit ZenohexPicoConfigResourceTypeInit = {
+  .dtor = config_dtor,
+  .members = 1
+};
+
+static void zenohex_pico_init_nif(GlobalContext *global){
+  ErlNifEnv env;
+  erl_nif_env_partial_init_from_globalcontext(&env, global);
+  config_resource_type = enif_init_resource_type(&env, "zenohex_pico_config", &ZenohexPicoConfigResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+}
+
 static term config_default(Context *ctx, int argc, term argv[])
 {
   z_owned_config_t config;
   z_result_t ret = z_config_default(&config);
 
   if(ret != Z_OK) {
-    return ERROR_ATOM;
+    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
-  return OK_ATOM;
+
+  ZenohexPicoConfigResource *res = enif_alloc_resource(config_resource_type, sizeof(ZenohexPicoConfigResource));
+  if (res == NULL) {
+    z_drop(z_move(config));
+    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+  }
+
+  z_internal_null(&res->config);
+  z_take(&res->config, z_move(config));
+
+  term obj = term_from_resource(res, &ctx->heap);
+  enif_release_resource(res);
+
+  term result = term_alloc_tuple(2, &ctx->heap);
+  term_put_tuple_element(result, 0, OK_ATOM);
+  term_put_tuple_element(result, 1, obj);
+
+  return result;
 }
 
 // NIF 関数実体
@@ -54,4 +96,4 @@ const struct Nif *zenohex_pico_get_nif(const char *nifname)
 }
 
 // NIF を登録するマクロ
-REGISTER_NIF_COLLECTION(zenohex_pico, NULL, NULL, zenohex_pico_get_nif)
+REGISTER_NIF_COLLECTION(zenohex_pico, zenohex_pico_init_nif, NULL, zenohex_pico_get_nif)
