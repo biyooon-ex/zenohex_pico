@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.16)
+
+set(ZENOHPICO_SUBMODULE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../zenoh-pico")
+
+if(NOT EXISTS "${ZENOHPICO_SUBMODULE_DIR}/CMakeLists.txt")
+	message(FATAL_ERROR
+		"zenoh-pico submodule is missing at ${ZENOHPICO_SUBMODULE_DIR}. Run at repo root: git submodule update --init --recursive")
+endif()
+
+# Keep feature defaults aligned with upstream by using its committed headers
+# and only compiling the ESP-IDF + common implementation layers here.
+set(ZENOHPICO_SRCS)
+
+file(GLOB_RECURSE ZENOHPICO_API_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/api/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_API_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_COLLECTIONS_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/collections/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_COLLECTIONS_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_LINK_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/link/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_LINK_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_NET_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/net/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_NET_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_PROTOCOL_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/protocol/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_PROTOCOL_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_RUNTIME_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/runtime/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_RUNTIME_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_SESSION_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/session/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SESSION_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_TRANSPORT_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/transport/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_TRANSPORT_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_UTILS_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/utils/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_UTILS_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_SYSTEM_COMMON_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/system/common/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_COMMON_SRCS})
+
+file(GLOB_RECURSE ZENOHPICO_SYSTEM_ESPIDF_SRCS
+	"${ZENOHPICO_SUBMODULE_DIR}/src/system/espidf/*.c")
+list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_ESPIDF_SRCS})
+
+idf_component_register(
+	SRCS ${ZENOHPICO_SRCS}
+	INCLUDE_DIRS
+		"${ZENOHPICO_SUBMODULE_DIR}/include"
+	REQUIRES
+		esp_driver_uart
+		esp_hw_support
+		freertos
+		lwip
+)
+
+target_compile_definitions(${COMPONENT_LIB} PUBLIC ZENOH_ESPIDF)
+target_compile_features(${COMPONENT_LIB} PUBLIC c_std_11)
+
+set(ZENOH_LOG_LEVELS TRACE DEBUG INFO WARN ERROR)
+foreach(level IN LISTS ZENOH_LOG_LEVELS)
+	option(ZENOH_LOG_${level} "Enable ZENOH_LOG_${level}" OFF)
+	if(ZENOH_LOG_${level})
+		target_compile_definitions(${COMPONENT_LIB} PUBLIC ZENOH_LOG_${level})
+	endif()
+endforeach()
