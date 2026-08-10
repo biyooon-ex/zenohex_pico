@@ -22,6 +22,12 @@ zenohex_pico-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
+# priv
+/priv/*.so
+
 # AtomVm
 /avm_deps/
 /*.avm
+
+# Visula Studio Code
+.vscode/
