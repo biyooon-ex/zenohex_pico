@@ -3,9 +3,11 @@
 
 #include "config.h"
 #include "session.h"
+#include "term.h"
 
 static int load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
 {
+  init_atom(env);
   config_enif_init_resource_type(env);
   session_enif_init_resource_type(env);
   return 0;
