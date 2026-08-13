@@ -5,9 +5,9 @@
 #include "macro.h"
 #include "term.h"
 
-ErlNifResourceType *session_resource_type = NULL;
+ErlNifResourceType *zxp_session_resource_type = NULL;
 
-static void session_dtor(ErlNifEnv *env, void *obj)
+static void zxp_session_dtor(ErlNifEnv *env, void *obj)
 {
   UNUSED(env);
 
@@ -15,23 +15,23 @@ static void session_dtor(ErlNifEnv *env, void *obj)
   z_drop(z_move(*session_p));
 }
 
-static const ErlNifResourceTypeInit ZenohexPicoSessionResourceTypeInit = {
-    .dtor = session_dtor,
+static const ErlNifResourceTypeInit ZxpSessionResourceTypeInit = {
+    .dtor = zxp_session_dtor,
     .members = 1,
 };
 
-void session_enif_init_resource_type(ErlNifEnv *env)
+void zxp_session_enif_init_resource_type(ErlNifEnv *env)
 {
-  session_resource_type = enif_init_resource_type(
-      env, "zenohex_pico_config", &ZenohexPicoSessionResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+  zxp_session_resource_type = enif_init_resource_type(
+      env, "zxp_session", &ZxpSessionResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
 }
 
-ERL_NIF_TERM session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
   UNUSED(argc);
 
   z_owned_config_t *config_p = NULL;
-  if (!enif_get_resource(env, argv[0], config_resource_type, (void **)&config_p))
+  if (!enif_get_resource(env, argv[0], zxp_config_resource_type, (void **)&config_p))
   {
     return enif_make_badarg(env);
   }
@@ -42,7 +42,7 @@ ERL_NIF_TERM session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     if (ret != Z_OK)
     {
-      return error_tuple_zp(env, __FILE__, __LINE__, ret);
+      return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
     }
   }
 
@@ -52,14 +52,15 @@ ERL_NIF_TERM session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     if (ret != Z_OK)
     {
-      return error_tuple_zp(env, __FILE__, __LINE__, ret);
+      return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
     }
   }
 
-  z_owned_session_t *session_p = enif_alloc_resource(session_resource_type, sizeof(session_p));
+  z_owned_session_t *session_p =
+      enif_alloc_resource(zxp_session_resource_type, sizeof(z_owned_session_t));
   if (session_p == NULL)
   {
-    return raise_null_pointer(env, __FILE__, __LINE__);
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
   z_internal_null(session_p);

@@ -11,8 +11,18 @@ defmodule ZenohexPico.Nif do
 
   defp err, do: :erlang.nif_error(:nif_not_loaded)
 
+  def test_raise, do: err()
+
   @spec config_default() :: {:ok, reference()}
   def config_default, do: err()
+
+  @spec config_get(reference(), integer()) ::
+          {:ok, value :: String.t()} | {:error, reason :: term()}
+  def config_get(_config, _key), do: err()
+
+  @spec config_insert(reference(), integer(), String.t()) ::
+          {:ok, reference()} | {:error, reason :: term()}
+  def config_insert(_config, _key, _value), do: err()
 
   @spec session_open(reference()) :: {:ok, reference()}
   def session_open(_config), do: err()

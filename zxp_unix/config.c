@@ -4,9 +4,9 @@
 #include "macro.h"
 #include "term.h"
 
-ErlNifResourceType *config_resource_type = NULL;
+ErlNifResourceType *zxp_config_resource_type = NULL;
 
-static void config_dtor(ErlNifEnv *env, void *obj)
+static void zxp_config_dtor(ErlNifEnv *env, void *obj)
 {
   UNUSED(env);
 
@@ -14,18 +14,18 @@ static void config_dtor(ErlNifEnv *env, void *obj)
   z_drop(z_move(*config));
 }
 
-static const ErlNifResourceTypeInit ZenohexPicoConfigResourceTypeInit = {
-    .dtor = config_dtor,
+static const ErlNifResourceTypeInit ZxpConfigResourceTypeInit = {
+    .dtor = zxp_config_dtor,
     .members = 1,
 };
 
-void config_enif_init_resource_type(ErlNifEnv *env)
+void zxp_config_enif_init_resource_type(ErlNifEnv *env)
 {
-  config_resource_type = enif_init_resource_type(
-      env, "zenohex_pico_config", &ZenohexPicoConfigResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+  zxp_config_resource_type = enif_init_resource_type(
+      env, "zxp_config", &ZxpConfigResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
 }
 
-ERL_NIF_TERM config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM zxp_config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
   UNUSED(argc);
   UNUSED(argv);
@@ -35,13 +35,14 @@ ERL_NIF_TERM config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
   if (ret != Z_OK)
   {
-    return error_tuple_zp(env, __FILE__, __LINE__, ret);
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  z_owned_config_t *config_p = enif_alloc_resource(config_resource_type, sizeof(z_owned_config_t));
+  z_owned_config_t *config_p =
+      enif_alloc_resource(zxp_config_resource_type, sizeof(z_owned_config_t));
   if (config_p == NULL)
   {
-    return raise_null_pointer(env, __FILE__, __LINE__);
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
   z_internal_null(config_p);
@@ -51,4 +52,92 @@ ERL_NIF_TERM config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
   enif_release_resource(config_p);
 
   return enif_make_tuple2(env, ok_atom, config_ref);
+}
+
+ERL_NIF_TERM zxp_config_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  UNUSED(argc);
+
+  z_owned_config_t *config_p = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_config_resource_type, (void **)&config_p))
+  {
+    return enif_make_badarg(env);
+  }
+
+  unsigned int key = 0;
+  if (!enif_get_uint(env, argv[1], (unsigned int *)&key))
+  {
+    return enif_make_badarg(env);
+  }
+
+  if (key > UINT8_MAX)
+  {
+    return enif_make_badarg(env);
+  }
+
+  const char *value = zp_config_get(z_loan(*config_p), (uint8_t)key);
+  if (value == NULL)
+  {
+    return enif_make_tuple2(env, error_atom, not_found_atom);
+  }
+
+  size_t len = strlen(value);
+  ErlNifBinary bin;
+  if (!enif_alloc_binary(len, &bin))
+  {
+    return zxp_raise(env, __FILE__, __LINE__, "enif_alloc_binary returns false");
+  }
+
+  memcpy(bin.data, value, len);
+  ERL_NIF_TERM binary = enif_make_binary(env, &bin);
+  enif_release_binary(&bin);
+
+  return enif_make_tuple2(env, ok_atom, binary);
+}
+
+ERL_NIF_TERM zxp_config_insert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  UNUSED(argc);
+
+  z_owned_config_t *config_p = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_config_resource_type, (void **)&config_p))
+  {
+    return enif_make_badarg(env);
+  }
+
+  unsigned int key = 0;
+  if (!enif_get_uint(env, argv[1], &key))
+  {
+    return enif_make_badarg(env);
+  }
+
+  if (key > UINT8_MAX)
+  {
+    return enif_make_badarg(env);
+  }
+
+  ErlNifBinary bin;
+  if (!enif_inspect_binary(env, argv[2], &bin))
+  {
+    return enif_make_badarg(env);
+  }
+
+  char *value = enif_alloc(bin.size + 1);
+  if (value == NULL)
+  {
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  memcpy(value, bin.data, bin.size);
+  value[bin.size] = '\0';
+
+  z_result_t ret = zp_config_insert(z_loan_mut(*config_p), key, value);
+  enif_free(value);
+
+  if (ret != Z_OK)
+  {
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  return enif_make_tuple2(env, ok_atom, argv[0]);
 }

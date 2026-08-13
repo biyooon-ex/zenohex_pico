@@ -2,18 +2,23 @@
 #include <stdio.h>
 #include <zenoh-pico.h>
 
-#include "term.h"
+#include "macro.h"
 
 ERL_NIF_TERM ok_atom;
 ERL_NIF_TERM error_atom;
+ERL_NIF_TERM not_found_atom;
 
-static ERL_NIF_TERM error_binary(ErlNifEnv *env, const char *file, int line, const char *reason)
+static ERL_NIF_TERM zxp_error_binary(ErlNifEnv *env, const char *file, int line, const char *reason)
 {
-  size_t len = (size_t)snprintf(NULL, 0, "%s at %s:%d", reason, file, line);
+  int len = snprintf(NULL, 0, "%s at %s:%d", reason, file, line);
+  if (len < 0)
+  {
+    return enif_make_tuple2(env, error_atom, enif_make_atom(env, "snprintf_failed"));
+  }
   char *msg = enif_alloc(len + 1);
   if (msg == NULL)
   {
-    return raise(env, file, line, "error_binary enif_alloc returns null pointer");
+    return enif_make_tuple2(env, error_atom, enif_make_atom(env, "enif_alloc_failed"));
   }
 
   snprintf(msg, len + 1, "%s at %s:%d", reason, file, line);
@@ -22,7 +27,7 @@ static ERL_NIF_TERM error_binary(ErlNifEnv *env, const char *file, int line, con
   if (!enif_alloc_binary(len, &bin))
   {
     enif_free(msg);
-    return raise(env, file, line, "error_binary enif_alloc_binary returns false");
+    return enif_make_tuple2(env, error_atom, enif_make_atom(env, "enif_alloc_binary_failed"));
   }
 
   memcpy(bin.data, msg, len);
@@ -31,24 +36,25 @@ static ERL_NIF_TERM error_binary(ErlNifEnv *env, const char *file, int line, con
   return enif_make_binary(env, &bin);
 }
 
-void init_atom(ErlNifEnv *env)
+void zxp_init_atom(ErlNifEnv *env)
 {
   ok_atom = enif_make_atom(env, "ok");
   error_atom = enif_make_atom(env, "error");
+  not_found_atom = enif_make_atom(env, "not_found");
 }
 
-ERL_NIF_TERM raise(ErlNifEnv *env, const char *file, int line, const char *reason)
+ERL_NIF_TERM zxp_raise(ErlNifEnv *env, const char *file, int line, const char *reason)
 {
-  ERL_NIF_TERM str = error_binary(env, file, line, reason);
-  return enif_raise_exception(env, str);
+  ERL_NIF_TERM binary = zxp_error_binary(env, file, line, reason);
+  return enif_raise_exception(env, binary);
 }
 
-ERL_NIF_TERM raise_null_pointer(ErlNifEnv *env, const char *file, int line)
+ERL_NIF_TERM zxp_raise_null_pointer(ErlNifEnv *env, const char *file, int line)
 {
-  return raise(env, file, line, "null pointer");
+  return zxp_raise(env, file, line, "null pointer");
 }
 
-ERL_NIF_TERM error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
+ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
 {
   const char *reason;
   char unknown_reason[16];
@@ -209,6 +215,14 @@ ERL_NIF_TERM error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_result
     break;
   }
 
-  ERL_NIF_TERM str = error_binary(env, file, line, reason);
+  ERL_NIF_TERM str = zxp_error_binary(env, file, line, reason);
   return enif_make_tuple2(env, error_atom, str);
+}
+
+ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  UNUSED(argc);
+  UNUSED(argv);
+
+  return zxp_raise(env, __FILE__, __LINE__, "test");
 }
