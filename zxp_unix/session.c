@@ -2,12 +2,15 @@
 #include <zenoh-pico.h>
 
 #include "config.h"
+#include "macro.h"
 #include "term.h"
 
 ErlNifResourceType *session_resource_type = NULL;
 
 static void session_dtor(ErlNifEnv *env, void *obj)
 {
+  UNUSED(env);
+
   z_owned_session_t *session_p = (z_owned_session_t *)obj;
   z_drop(z_move(*session_p));
 }
@@ -25,6 +28,8 @@ void session_enif_init_resource_type(ErlNifEnv *env)
 
 ERL_NIF_TERM session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
+  UNUSED(argc);
+
   z_owned_config_t *config_p = NULL;
   if (!enif_get_resource(env, argv[0], config_resource_type, (void **)&config_p))
   {

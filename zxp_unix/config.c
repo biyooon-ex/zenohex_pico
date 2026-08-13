@@ -1,12 +1,15 @@
 #include <erl_nif.h>
 #include <zenoh-pico.h>
 
+#include "macro.h"
 #include "term.h"
 
 ErlNifResourceType *config_resource_type = NULL;
 
 static void config_dtor(ErlNifEnv *env, void *obj)
 {
+  UNUSED(env);
+
   z_owned_config_t *config = (z_owned_config_t *)obj;
   z_drop(z_move(*config));
 }
@@ -24,6 +27,9 @@ void config_enif_init_resource_type(ErlNifEnv *env)
 
 ERL_NIF_TERM config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
+  UNUSED(argc);
+  UNUSED(argv);
+
   z_owned_config_t config;
   z_result_t ret = z_config_default(&config);
 

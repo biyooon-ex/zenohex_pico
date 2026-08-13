@@ -2,11 +2,15 @@
 #include <zenoh-pico.h>
 
 #include "config.h"
+#include "macro.h"
 #include "session.h"
 #include "term.h"
 
 static int load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
 {
+  UNUSED(priv);
+  UNUSED(info);
+
   init_atom(env);
   config_enif_init_resource_type(env);
   session_enif_init_resource_type(env);
