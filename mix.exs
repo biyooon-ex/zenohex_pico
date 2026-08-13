@@ -39,7 +39,19 @@ defmodule ZenohexPico.MixProject do
         {:elixir_make, "~> 0.4", runtime: false}
       ],
       compilers: [:elixir_make] ++ Mix.compilers(),
-      make_cwd: "zxp_unix"
+      make_cwd: "zxp_unix",
+      make_clean: ["clean"],
+      aliases: [
+        format: [
+          fn _ ->
+            if not is_nil(System.find_executable("clang-format")) do
+              files = Path.wildcard("zxp_unix/*.{c,h}")
+              System.cmd("clang-format", ["-i" | files])
+            end
+          end,
+          "format"
+        ]
+      ]
     ]
   end
 end

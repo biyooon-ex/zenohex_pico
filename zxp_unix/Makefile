@@ -1,19 +1,26 @@
-ERLANG_ROOT ?= $(shell erl -noshell -eval 'io:format("~s", [code:root_dir()])' -s init stop)
-ELIXIR_NIF_INCLUDE ?= $(ERLANG_ROOT)/usr/include
-ZENOH_PICO_DIR ?= ../zenoh-pico
-ZENOH_PICO_BUILD_DIR ?= $(ZENOH_PICO_DIR)/build
-ZENOH_PICO_LIB ?= $(ZENOH_PICO_BUILD_DIR)/lib/libzenohpico.a
-ZENOH_PICO_STAMP ?= $(ZENOH_PICO_BUILD_DIR)/.zenohex_built
+ZENOH_PICO_DIR = ../zenoh-pico
+ZENOH_PICO_BUILD_DIR = $(ZENOH_PICO_DIR)/build
+ZENOH_PICO_LIB = $(ZENOH_PICO_BUILD_DIR)/lib/libzenohpico.a
+ZENOH_PICO_DEFS ?= -DZENOH_LINUX -DZENOH_COMPILER_GCC
+ZENOH_PICO_CFLAGS = -I$(ZENOH_PICO_DIR)/include
+ZENOH_PICO_LDFLAGS = -lpthread
+
 CC ?= cc
 CFLAGS ?= -O2 -fPIC -Wall -Wextra# -Werror
-ZENOH_DEFS ?= -DZENOH_LINUX -DZENOH_COMPILER_GCC
 LDFLAGS ?= -shared
-TARGET ?= ../priv/zenohex_pico.so
-SOURCE ?= zenohex_pico.c
 
-all: $(TARGET)
+ERL_CFLAGS  ?= -I$(ERTS_INCLUDE_DIR) -I$(ERL_EI_INCLUDE_DIR)
+ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR) -lei
 
-$(ZENOH_PICO_STAMP):
+PRIV_DIR = $(MIX_APP_PATH)/priv
+NIF_SO = $(PRIV_DIR)/zenohex_pico.so
+
+SRC_DIR = .
+SRC_C ?= $(wildcard $(SRC_DIR)/*.c)
+
+all: $(NIF_SO)
+
+$(ZENOH_PICO_LIB):
 	cmake -S $(ZENOH_PICO_DIR) -B $(ZENOH_PICO_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_SHARED_LIBS=OFF \
@@ -24,23 +31,23 @@ $(ZENOH_PICO_STAMP):
 		-DBUILD_TOOLS=OFF \
 		-DZENOH_LOG=TRACE
 	cmake --build $(ZENOH_PICO_BUILD_DIR) --target zenohpico_static
-	touch $(ZENOH_PICO_STAMP)
 
-../priv:
-	mkdir -p ../priv
+$(PRIV_DIR):
+	mkdir -p $@
 
-$(TARGET): $(SOURCE) $(ZENOH_PICO_STAMP) $(ZENOH_PICO_LIB) | ../priv
+$(NIF_SO): $(SRC_C) $(ZENOH_PICO_LIB) | $(PRIV_DIR)
 	$(CC) $(CFLAGS) \
-		$(ZENOH_DEFS) \
-		-I$(ELIXIR_NIF_INCLUDE) \
-		-I$(ZENOH_PICO_DIR)/include \
-		-o $@ $< \
+		$(ZENOH_PICO_DEFS) \
+		$(ZENOH_PICO_CFLAGS) \
+		$(ERL_CFLAGS) \
+		-o $@ \
+		$(SRC_C) \
 		$(ZENOH_PICO_LIB) \
-		-lpthread \
-		$(LDFLAGS)
+		$(LDFLAGS) \
+		$(ZENOH_PICO_LDFLAGS) \
+		$(ERL_LDFLAGS)
 
 clean:
-	rm -f $(TARGET)
-	rm -f $(ZENOH_PICO_STAMP)
+	rm -f $(NIF_SO)
 
 .PHONY: all clean
