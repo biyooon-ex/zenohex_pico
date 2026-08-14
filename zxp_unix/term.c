@@ -224,5 +224,5 @@ ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
   UNUSED(argc);
   UNUSED(argv);
 
-  return zxp_raise(env, __FILE__, __LINE__, "test");
+  return zxp_raise(env, __FILE__, __LINE__, "raise");
 }
