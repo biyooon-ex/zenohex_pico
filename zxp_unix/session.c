@@ -71,3 +71,22 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
 
   return enif_make_tuple2(env, ok_atom, session_ref);
 }
+
+ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  UNUSED(argc);
+
+  z_owned_session_t *session_p = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  {
+    return enif_make_badarg(env);
+  }
+
+  z_result_t ret = z_close(z_loan_mut(*session_p), NULL);
+  if (ret != Z_OK)
+  {
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  return ok_atom;
+}

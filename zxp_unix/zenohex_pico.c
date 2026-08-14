@@ -19,6 +19,7 @@ static int load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
 
 static ErlNifFunc nif_funcs[] = {
     {"session_open", 1, zxp_session_open, 0},
+    {"session_close", 1, zxp_session_close, 0},
     {"config_default", 0, zxp_config_default, 0},
     {"config_get", 2, zxp_config_get, 0},
     {"config_insert", 3, zxp_config_insert, 0},
