@@ -24,6 +24,6 @@ defmodule ZenohexPico.Nif do
           {:ok, reference()} | {:error, reason :: term()}
   def config_insert(_config, _key, _value), do: err()
 
-  @spec session_open(reference()) :: {:ok, reference()}
+  @spec session_open(reference()) :: {:ok, reference()} | {:error, reason :: term()}
   def session_open(_config), do: err()
 end
