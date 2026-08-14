@@ -6,6 +6,7 @@ defmodule ZenohexPico.NifTest do
   @z_config_mode_key 0x40
   @z_config_mode_client "client"
   @z_config_mode_peer "peer"
+  @z_config_listen_key 0x42
 
   test "test_raise/0" do
     assert_raise ErlangError, ~r/raise.+/, fn -> Nif.test_raise() end
@@ -33,8 +34,15 @@ defmodule ZenohexPico.NifTest do
   describe "session functions" do
     test "session_open/1" do
       {:ok, config} = Nif.config_default()
-      assert {:error, reason} = Nif.session_open(config)
-      assert reason =~ "_z_err_scout_no_results"
+
+      {:ok, config} =
+        ZenohexPico.Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+
+      {:ok, config} =
+        ZenohexPico.Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+
+      assert {:ok, session} = Nif.session_open(config)
+      assert is_reference(session)
     end
   end
 end
