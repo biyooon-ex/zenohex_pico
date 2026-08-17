@@ -51,5 +51,17 @@ defmodule ZenohexPico.NifTest do
       # Ensure closing an already-closed session is safe.
       assert Nif.session_close(session) == :ok
     end
+
+    test "session_get/4 returns timeout when there are no queryables" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert Nif.session_get(session, "zenohex_pico/no_responder", 100, query_timeout: 10) ==
+               {:error, :timeout}
+
+      assert :ok = Nif.session_close(session)
+    end
   end
 end

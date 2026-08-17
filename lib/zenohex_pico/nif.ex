@@ -29,4 +29,10 @@ defmodule ZenohexPico.Nif do
 
   @spec session_close(reference()) :: :ok | {:error, reason :: term()}
   def session_close(_session), do: err()
+
+  @spec session_get(reference(), String.t(), non_neg_integer(), keyword()) ::
+          {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
+          | {:error, :timeout}
+          | {:error, reason :: term()}
+  def session_get(_session, _selector, _timeout, _opts \\ []), do: err()
 end
