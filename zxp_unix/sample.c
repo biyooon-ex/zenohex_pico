@@ -4,7 +4,38 @@
 #include "helper/helper.h"
 #include "term.h"
 
-static ERL_NIF_TERM zxp_priority(z_priority_t priority)
+static ERL_NIF_TERM zxp_atom_from_zp_congestion_control(z_congestion_control_t congestion_control)
+{
+  switch (congestion_control)
+  {
+  case Z_CONGESTION_CONTROL_DROP:
+    return drop_atom;
+  case Z_CONGESTION_CONTROL_BLOCK:
+    return block_atom;
+  default:
+    return drop_atom;
+  }
+}
+
+static ERL_NIF_TERM zxp_atom_from_zp_express(bool express)
+{
+  return express ? true_atom : false_atom;
+}
+
+static ERL_NIF_TERM zxp_atom_from_zp_sample_kind(z_sample_kind_t kind)
+{
+  switch (kind)
+  {
+  case Z_SAMPLE_KIND_PUT:
+    return put_atom;
+  case Z_SAMPLE_KIND_DELETE:
+    return delete_atom;
+  default:
+    return put_atom;
+  }
+}
+
+static ERL_NIF_TERM zxp_atom_from_zp_priority(z_priority_t priority)
 {
   switch (priority)
   {
@@ -86,7 +117,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_encoding(ErlNifEnv *env, const z_loaned_e
   return term;
 }
 
-ERL_NIF_TERM zxp_sample_from_zp_sample(ErlNifEnv *env, const z_loaned_sample_t *sample)
+ERL_NIF_TERM zxp_struct_from_zp_sample(ErlNifEnv *env, const z_loaned_sample_t *sample)
 {
   ERL_NIF_TERM keys[] = {
       struct_atom,
@@ -104,13 +135,13 @@ ERL_NIF_TERM zxp_sample_from_zp_sample(ErlNifEnv *env, const z_loaned_sample_t *
   ERL_NIF_TERM values[] = {
       sample_module,
       zxp_binary_from_zp_bytes(env, z_sample_attachment(sample)),
-      z_sample_congestion_control(sample) == Z_CONGESTION_CONTROL_BLOCK ? block_atom : drop_atom,
+      zxp_atom_from_zp_congestion_control(z_sample_congestion_control(sample)),
       zxp_binary_from_zp_encoding(env, z_sample_encoding(sample)),
-      z_sample_express(sample) ? true_atom : false_atom,
+      zxp_atom_from_zp_express(z_sample_express(sample)),
       zxp_binary_from_zp_keyexpr(env, z_sample_keyexpr(sample)),
-      z_sample_kind(sample) == Z_SAMPLE_KIND_DELETE ? delete_atom : put_atom,
+      zxp_atom_from_zp_sample_kind(z_sample_kind(sample)),
       zxp_binary_from_zp_bytes(env, z_sample_payload(sample)),
-      zxp_priority(z_sample_priority(sample)),
+      zxp_atom_from_zp_priority(z_sample_priority(sample)),
       nil_atom,
   };
 

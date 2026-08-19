@@ -22,15 +22,14 @@ typedef struct
 {
   pthread_mutex_t mutex;
   pthread_cond_t complete;
-  bool is_complete;
-  bool has_exception;
+  bool is_z_get_complete;
   size_t ref_count;
   ErlNifEnv *env;
   ERL_NIF_TERM replies;
   ERL_NIF_TERM exception;
-} zxp_session_get_context_2_t;
+} zxp_session_get_context_t;
 
-static void zxp_session_get_context_release2(zxp_session_get_context_2_t *context)
+static void zxp_session_get_context_release(zxp_session_get_context_t *context)
 {
   bool should_free = false;
 
@@ -48,13 +47,13 @@ static void zxp_session_get_context_release2(zxp_session_get_context_2_t *contex
   }
 }
 
-static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
+static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
 {
-  zxp_session_get_context_2_t *context = arg;
+  zxp_session_get_context_t *context = arg;
 
   pthread_mutex_lock(&context->mutex);
   {
-    if (context->has_exception)
+    if (enif_is_exception(context->env, context->exception))
     {
       pthread_mutex_unlock(&context->mutex);
       return;
@@ -64,16 +63,16 @@ static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
     if (z_reply_is_ok(reply))
     {
       const z_loaned_sample_t *sample = z_reply_ok(reply);
-      term = zxp_sample_from_zp_sample(context->env, sample);
+      term = zxp_struct_from_zp_sample(context->env, sample);
     }
     else
     {
       const z_loaned_reply_err_t *reply_err = z_reply_err(reply);
-      term = zxp_reply_err_from_zp_reply_err(context->env, reply_err);
+      term = zxp_struct_from_zp_reply_err(context->env, reply_err);
     }
+
     if (enif_is_exception(context->env, term))
     {
-      context->has_exception = true;
       context->exception = term;
     }
     else
@@ -84,14 +83,14 @@ static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
   pthread_mutex_unlock(&context->mutex);
 }
 
-static void zxp_session_get_reply_dropper2(void *arg)
+static void zxp_session_get_drop_cb(void *arg)
 {
-  zxp_session_get_context_2_t *context = arg;
+  zxp_session_get_context_t *context = arg;
   pthread_mutex_lock(&context->mutex);
-  context->is_complete = true;
+  context->is_z_get_complete = true;
   pthread_cond_signal(&context->complete);
   pthread_mutex_unlock(&context->mutex);
-  zxp_session_get_context_release2(context);
+  zxp_session_get_context_release(context);
 }
 
 static bool zxp_session_get_options(ErlNifEnv *env, ERL_NIF_TERM term, z_get_options_t *options)
@@ -256,22 +255,11 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  char *parameters = enif_alloc(parameters_length + 1);
-  if (parameters == NULL)
-  {
-    z_drop(z_move(keyexpr));
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
-  }
-  if (parameters_length > 0)
-  {
-    memcpy(parameters, query_separator + 1, parameters_length);
-  }
-  parameters[parameters_length] = '\0';
+  const char *parameters = query_separator == NULL ? NULL : (const char *)(query_separator + 1);
 
-  zxp_session_get_context_2_t *context = enif_alloc(sizeof(*context));
+  zxp_session_get_context_t *context = enif_alloc(sizeof(*context));
   if (context == NULL)
   {
-    enif_free(parameters);
     z_drop(z_move(keyexpr));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
@@ -280,17 +268,27 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   if (pthread_mutex_init(&context->mutex, NULL) != 0)
   {
     enif_free(context);
-    enif_free(parameters);
     z_drop(z_move(keyexpr));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
+
   pthread_condattr_t attr;
-  if (pthread_condattr_init(&attr) != 0 || pthread_condattr_setclock(&attr, CLOCK_MONOTONIC) != 0 ||
-      pthread_cond_init(&context->complete, &attr) != 0)
+  if (pthread_condattr_init(&attr) != 0)
   {
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
-    enif_free(parameters);
+    z_drop(z_move(keyexpr));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  int condattr_result = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+  int cond_result =
+      condattr_result == 0 ? pthread_cond_init(&context->complete, &attr) : condattr_result;
+  pthread_condattr_destroy(&attr);
+  if (cond_result != 0)
+  {
+    pthread_mutex_destroy(&context->mutex);
+    enif_free(context);
     z_drop(z_move(keyexpr));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
@@ -301,20 +299,19 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     pthread_cond_destroy(&context->complete);
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
-    enif_free(parameters);
     z_drop(z_move(keyexpr));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
+
   context->replies = enif_make_list(context->env, 0);
+  context->exception = nil_atom;
   context->ref_count = 1;
 
   z_owned_closure_reply_t callback;
-  ret = z_closure_reply(
-      &callback, zxp_session_get_reply_handler2, zxp_session_get_reply_dropper2, context);
+  ret = z_closure_reply(&callback, zxp_session_get_reply_cb, zxp_session_get_drop_cb, context);
   if (ret != Z_OK)
   {
-    zxp_session_get_context_release2(context);
-    enif_free(parameters);
+    zxp_session_get_context_release(context);
     z_drop(z_move(keyexpr));
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
@@ -323,12 +320,16 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   context->ref_count++;
   pthread_mutex_unlock(&context->mutex);
 
-  ret = z_get(z_loan(*session_p), z_loan(keyexpr), parameters, z_move(callback), &options);
-  enif_free(parameters);
+  ret = z_get_with_parameters_substr(z_loan(*session_p),
+                                     z_loan(keyexpr),
+                                     parameters,
+                                     parameters_length,
+                                     z_move(callback),
+                                     &options);
   z_drop(z_move(keyexpr));
   if (ret != Z_OK)
   {
-    zxp_session_get_context_release2(context);
+    zxp_session_get_context_release(context);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
@@ -336,7 +337,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   zxp_session_get_deadline(timeout_ms, &deadline);
 
   pthread_mutex_lock(&context->mutex);
-  while (!context->is_complete)
+  while (!context->is_z_get_complete)
   {
     int wait_result = pthread_cond_timedwait(&context->complete, &context->mutex, &deadline);
     if (wait_result == ETIMEDOUT)
@@ -346,31 +347,39 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     if (wait_result != 0)
     {
       pthread_mutex_unlock(&context->mutex);
-      zxp_session_get_context_release2(context);
-      return zxp_raise(env, __FILE__, __LINE__, "pthread_cond_timedwait failed");
+      zxp_session_get_context_release(context);
+      return zxp_raise(env, __FILE__, __LINE__, "pthread_cond_timedwait/3 failed");
     }
   }
 
-  bool has_exception = context->has_exception;
-  ERL_NIF_TERM result = has_exception ? context->exception : context->replies;
-  ERL_NIF_TERM copied_result = enif_make_copy(env, result);
+  if (enif_is_exception(context->env, context->exception))
+  {
+    ERL_NIF_TERM term = enif_make_copy(env, context->exception);
+    pthread_mutex_unlock(&context->mutex);
+    zxp_session_get_context_release(context);
+    return term;
+  }
+
+  ERL_NIF_TERM replies = enif_make_copy(env, context->replies);
   pthread_mutex_unlock(&context->mutex);
-  zxp_session_get_context_release2(context);
+  zxp_session_get_context_release(context);
 
-  if (has_exception)
+  unsigned reply_count = 0;
+  if (!enif_get_list_length(env, replies, &reply_count))
   {
-    return copied_result;
+    return zxp_raise(env, __FILE__, __LINE__, "enif_get_list_length/3 failed");
   }
 
-  unsigned len = 0;
-  if (!enif_get_list_length(env, copied_result, &len))
-  {
-    return enif_make_badarg(env);
-  }
-
-  if (len == 0)
+  if (reply_count == 0)
   {
     return enif_make_tuple2(env, error_atom, timeout_atom);
   }
-  return enif_make_tuple2(env, ok_atom, copied_result);
+
+  ERL_NIF_TERM ordered_replies;
+  if (!enif_make_reverse_list(env, replies, &ordered_replies))
+  {
+    return zxp_raise(env, __FILE__, __LINE__, "enif_make_reverse_list/3 failed");
+  }
+
+  return enif_make_tuple2(env, ok_atom, ordered_replies);
 }

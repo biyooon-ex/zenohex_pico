@@ -12,14 +12,16 @@ static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_byte
   }
 
   z_owned_slice_t slice;
-  z_result_t ret = z_bytes_to_slice(bytes, &slice);
-  if (ret != Z_OK)
+  ERL_NIF_TERM term;
   {
-    return zxp_raise(env, __FILE__, __LINE__, zxp_error_char_zp(ret));
-  }
+    z_result_t ret = z_bytes_to_slice(bytes, &slice);
+    if (ret != Z_OK)
+    {
+      return zxp_raise(env, __FILE__, __LINE__, zxp_error_char_zp(ret));
+    }
 
-  ERL_NIF_TERM term =
-      zxp_binary_from_bytes(env, z_slice_data(z_loan(slice)), z_slice_len(z_loan(slice)));
+    term = zxp_binary_from_bytes(env, z_slice_data(z_loan(slice)), z_slice_len(z_loan(slice)));
+  }
   z_drop(z_move(slice));
   return term;
 }
@@ -43,7 +45,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_encoding(ErlNifEnv *env, const z_loaned_e
   return term;
 }
 
-ERL_NIF_TERM zxp_reply_err_from_zp_reply_err(ErlNifEnv *env, const z_loaned_reply_err_t *reply_err)
+ERL_NIF_TERM zxp_struct_from_zp_reply_err(ErlNifEnv *env, const z_loaned_reply_err_t *reply_err)
 {
   ERL_NIF_TERM keys[] = {
       struct_atom,
