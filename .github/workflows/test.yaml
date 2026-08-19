@@ -1,0 +1,69 @@
+name: Test
+
+env:
+  MIX_ENV: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: mix test (${{ matrix.os }}, Elixir ${{ matrix.beam.elixir_version }}, OTP ${{ matrix.beam.otp_version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+        beam:
+          - otp_version: 27.3.4.16
+            elixir_version: 1.18.4
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Get zenoh-pico revision
+        id: zenoh-pico-revision
+        run: echo "sha=$(git -C zenoh-pico rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: erlef/setup-beam@v1
+        id: setup-beam
+        with:
+          otp-version: ${{ matrix.beam.otp_version }}
+          elixir-version: ${{ matrix.beam.elixir_version }}
+
+      - name: Cache mix deps
+        id: deps-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+          key: deps-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('**/*.lock') }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('**/*.lock') }}
+            deps-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-
+
+      - name: Cache compiled zenoh-pico lib
+        id: zenoh-pico-lib-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            zenoh-pico/build
+          key: zenoh-pico-lib-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.zenoh-pico-revision.outputs.sha }}-${{ hashFiles('zxp_unix/Makefile') }}
+
+      - name: Install deps
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: mix do deps.get + deps.compile
+
+      - name: Compile project
+        run: mix compile --warnings-as-errors
+
+      - name: Run tests
+        run: mix test --warnings-as-errors

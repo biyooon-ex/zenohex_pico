@@ -42,6 +42,7 @@ ERL_NIF_TERM zxp_config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM arg
       enif_alloc_resource(zxp_config_resource_type, sizeof(z_owned_config_t));
   if (config_p == NULL)
   {
+    z_drop(z_move(config));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 

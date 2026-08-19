@@ -16,7 +16,7 @@ PRIV_DIR = $(MIX_APP_PATH)/priv
 NIF_SO = $(PRIV_DIR)/zenohex_pico.so
 
 SRC_DIR = .
-SRC_C ?= $(wildcard $(SRC_DIR)/*.c)
+SRC_C ?= $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_DIR)/helper/*.c)
 
 all: $(NIF_SO)
 
@@ -28,8 +28,7 @@ $(ZENOH_PICO_LIB):
 		-DBUILD_TESTING=OFF \
 		-DBUILD_EXAMPLES=OFF \
 		-DBUILD_INTEGRATION=OFF \
-		-DBUILD_TOOLS=OFF \
-		-DZENOH_LOG=TRACE
+		-DBUILD_TOOLS=OFF
 	cmake --build $(ZENOH_PICO_BUILD_DIR) --target zenohpico_static
 
 $(PRIV_DIR):

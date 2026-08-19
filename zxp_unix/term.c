@@ -4,9 +4,48 @@
 
 #include "macro.h"
 
+// primitive
 ERL_NIF_TERM ok_atom;
 ERL_NIF_TERM error_atom;
 ERL_NIF_TERM not_found_atom;
+ERL_NIF_TERM nil_atom;
+ERL_NIF_TERM timeout_atom;
+ERL_NIF_TERM struct_atom;
+ERL_NIF_TERM true_atom;
+ERL_NIF_TERM false_atom;
+
+//
+ERL_NIF_TERM payload_atom;
+ERL_NIF_TERM encoding_atom;
+ERL_NIF_TERM attachment_atom;
+ERL_NIF_TERM express_atom;
+ERL_NIF_TERM key_expr_atom;
+ERL_NIF_TERM timestamp_atom;
+ERL_NIF_TERM query_timeout_atom;
+
+// kind
+ERL_NIF_TERM kind_atom;
+ERL_NIF_TERM delete_atom;
+ERL_NIF_TERM put_atom;
+
+// module
+ERL_NIF_TERM sample_module;
+ERL_NIF_TERM reply_error_module;
+
+// congestion control
+ERL_NIF_TERM congestion_control_atom;
+ERL_NIF_TERM block_atom;
+ERL_NIF_TERM drop_atom;
+
+// priority
+ERL_NIF_TERM priority_atom;
+ERL_NIF_TERM real_time_atom;
+ERL_NIF_TERM interactive_high_atom;
+ERL_NIF_TERM interactive_low_atom;
+ERL_NIF_TERM data_high_atom;
+ERL_NIF_TERM data_atom;
+ERL_NIF_TERM data_low_atom;
+ERL_NIF_TERM background_atom;
 
 static ERL_NIF_TERM zxp_error_binary(ErlNifEnv *env, const char *file, int line, const char *reason)
 {
@@ -41,6 +80,39 @@ void zxp_init_atom(ErlNifEnv *env)
   ok_atom = enif_make_atom(env, "ok");
   error_atom = enif_make_atom(env, "error");
   not_found_atom = enif_make_atom(env, "not_found");
+  nil_atom = enif_make_atom(env, "nil");
+  timeout_atom = enif_make_atom(env, "timeout");
+  struct_atom = enif_make_atom(env, "__struct__");
+  true_atom = enif_make_atom(env, "true");
+  false_atom = enif_make_atom(env, "false");
+
+  payload_atom = enif_make_atom(env, "payload");
+  encoding_atom = enif_make_atom(env, "encoding");
+  attachment_atom = enif_make_atom(env, "attachment");
+  express_atom = enif_make_atom(env, "express");
+  key_expr_atom = enif_make_atom(env, "key_expr");
+  timestamp_atom = enif_make_atom(env, "timestamp");
+  query_timeout_atom = enif_make_atom(env, "query_timeout");
+
+  kind_atom = enif_make_atom(env, "kind");
+  delete_atom = enif_make_atom(env, "delete");
+  put_atom = enif_make_atom(env, "put");
+
+  sample_module = enif_make_atom(env, "Elixir.ZenohexPico.Sample");
+  reply_error_module = enif_make_atom(env, "Elixir.ZenohexPico.Query.ReplyError");
+
+  congestion_control_atom = enif_make_atom(env, "congestion_control");
+  block_atom = enif_make_atom(env, "block");
+  drop_atom = enif_make_atom(env, "drop");
+
+  priority_atom = enif_make_atom(env, "priority");
+  real_time_atom = enif_make_atom(env, "real_time");
+  interactive_high_atom = enif_make_atom(env, "interactive_high");
+  interactive_low_atom = enif_make_atom(env, "interactive_low");
+  data_high_atom = enif_make_atom(env, "data_high");
+  data_atom = enif_make_atom(env, "data");
+  data_low_atom = enif_make_atom(env, "data_low");
+  background_atom = enif_make_atom(env, "background");
 }
 
 ERL_NIF_TERM zxp_raise(ErlNifEnv *env, const char *file, int line, const char *reason)
@@ -54,10 +126,9 @@ ERL_NIF_TERM zxp_raise_null_pointer(ErlNifEnv *env, const char *file, int line)
   return zxp_raise(env, file, line, "null pointer");
 }
 
-ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
+const char *zxp_error_char_zp(z_result_t ret)
 {
   const char *reason;
-  char unknown_reason[16];
 
   switch (ret)
   {
@@ -210,13 +281,24 @@ ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_re
     reason = "_z_err_generic";
     break;
   default:
-    snprintf(unknown_reason, sizeof(unknown_reason), "unknown(%d)", (int)ret);
-    reason = unknown_reason;
+    // TODO output value to log
+    reason = "_z_err_unknown";
     break;
   }
 
-  ERL_NIF_TERM str = zxp_error_binary(env, file, line, reason);
-  return enif_make_tuple2(env, error_atom, str);
+  return reason;
+}
+
+ERL_NIF_TERM zxp_error_binary_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
+{
+  const char *reason = zxp_error_char_zp(ret);
+  return zxp_error_binary(env, file, line, reason);
+}
+
+ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
+{
+  ERL_NIF_TERM binary = zxp_error_binary_zp(env, file, line, ret);
+  return enif_make_tuple2(env, error_atom, binary);
 }
 
 ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
@@ -224,5 +306,5 @@ ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
   UNUSED(argc);
   UNUSED(argv);
 
-  return zxp_raise(env, __FILE__, __LINE__, "test");
+  return zxp_raise(env, __FILE__, __LINE__, "raise");
 }

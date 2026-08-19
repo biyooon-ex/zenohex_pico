@@ -24,6 +24,15 @@ defmodule ZenohexPico.Nif do
           {:ok, reference()} | {:error, reason :: term()}
   def config_insert(_config, _key, _value), do: err()
 
-  @spec session_open(reference()) :: {:ok, reference()}
+  @spec session_open(reference()) :: {:ok, reference()} | {:error, reason :: term()}
   def session_open(_config), do: err()
+
+  @spec session_close(reference()) :: :ok | {:error, reason :: term()}
+  def session_close(_session), do: err()
+
+  @spec session_get(reference(), String.t(), non_neg_integer(), keyword()) ::
+          {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
+          | {:error, :timeout}
+          | {:error, reason :: term()}
+  def session_get(_session, _selector, _timeout, _opts \\ []), do: err()
 end
