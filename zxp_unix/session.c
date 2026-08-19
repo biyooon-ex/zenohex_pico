@@ -183,6 +183,7 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
       enif_alloc_resource(zxp_session_resource_type, sizeof(z_owned_session_t));
   if (session_p == NULL)
   {
+    z_drop(z_move(session));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
