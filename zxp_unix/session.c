@@ -35,9 +35,11 @@ typedef struct
   pthread_mutex_t mutex;
   pthread_cond_t complete;
   bool is_complete;
+  bool has_exception;
   size_t ref_count;
   ErlNifEnv *env;
   ERL_NIF_TERM replies;
+  ERL_NIF_TERM exception;
 } zxp_session_get_context_2_t;
 
 // static void zxp_session_get_reply_clear(zxp_session_get_reply_t *reply)
@@ -82,6 +84,7 @@ static void zxp_session_get_context_release2(zxp_session_get_context_2_t *contex
 
   if (should_free)
   {
+    enif_free_env(context->env);
     pthread_cond_destroy(&context->complete);
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
@@ -224,6 +227,12 @@ static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
 
   pthread_mutex_lock(&context->mutex);
   {
+    if (context->has_exception)
+    {
+      pthread_mutex_unlock(&context->mutex);
+      return;
+    }
+
     ERL_NIF_TERM term;
     if (z_reply_is_ok(reply))
     {
@@ -235,8 +244,15 @@ static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
       const z_loaned_reply_err_t *reply_err = z_reply_err(reply);
       term = zxp_reply_err_from_zp_reply_err(context->env, reply_err);
     }
-    // context->replies は contextしょきかじにからのりすとをだいにゅうする
-    context->replies = enif_make_list_cell(context->env, term, context->replies);
+    if (enif_is_exception(context->env, term))
+    {
+      context->has_exception = true;
+      context->exception = term;
+    }
+    else
+    {
+      context->replies = enif_make_list_cell(context->env, term, context->replies);
+    }
   }
   pthread_mutex_unlock(&context->mutex);
 }
@@ -288,7 +304,7 @@ static bool zxp_session_get_options(ErlNifEnv *env, ERL_NIF_TERM term, z_get_opt
 
 static void zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
 {
-  clock_gettime(CLOCK_REALTIME, deadline);
+  clock_gettime(CLOCK_MONOTONIC, deadline);
   deadline->tv_sec += (time_t)(timeout_ms / 1000);
   deadline->tv_nsec += (long)((timeout_ms % 1000) * 1000000);
   if (deadline->tv_nsec >= 1000000000L)
@@ -436,20 +452,46 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   parameters[parameters_length] = '\0';
 
   zxp_session_get_context_2_t *context = enif_alloc(sizeof(*context));
-  if (context == NULL || pthread_mutex_init(&context->mutex, NULL) != 0 ||
-      pthread_cond_init(&context->complete, NULL) != 0)
+  if (context == NULL)
+  {
+    enif_free(parameters);
+    z_drop(z_move(keyexpr));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  memset(context, 0, sizeof(*context));
+  if (pthread_mutex_init(&context->mutex, NULL) != 0)
   {
     enif_free(context);
     enif_free(parameters);
     z_drop(z_move(keyexpr));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
+  pthread_condattr_t attr;
+  if (pthread_condattr_init(&attr) != 0 || pthread_condattr_setclock(&attr, CLOCK_MONOTONIC) != 0 ||
+      pthread_cond_init(&context->complete, &attr) != 0)
+  {
+    pthread_mutex_destroy(&context->mutex);
+    enif_free(context);
+    enif_free(parameters);
+    z_drop(z_move(keyexpr));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  context->env = enif_alloc_env();
+  if (context->env == NULL)
+  {
+    pthread_cond_destroy(&context->complete);
+    pthread_mutex_destroy(&context->mutex);
+    enif_free(context);
+    enif_free(parameters);
+    z_drop(z_move(keyexpr));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+  context->replies = enif_make_list(context->env, 0);
   context->ref_count = 1;
 
   z_owned_closure_reply_t callback;
-  pthread_mutex_lock(&context->mutex);
-  context->ref_count++;
-  pthread_mutex_unlock(&context->mutex);
   ret = z_closure_reply(
       &callback, zxp_session_get_reply_handler2, zxp_session_get_reply_dropper2, context);
   if (ret != Z_OK)
@@ -459,6 +501,10 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     z_drop(z_move(keyexpr));
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
+
+  pthread_mutex_lock(&context->mutex);
+  context->ref_count++;
+  pthread_mutex_unlock(&context->mutex);
 
   ret = z_get(z_loan(*session_p), z_loan(keyexpr), parameters, z_move(callback), &options);
   enif_free(parameters);
@@ -488,18 +534,26 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     }
   }
 
-  ERL_NIF_TERM replies = context->replies;
+  bool has_exception = context->has_exception;
+  ERL_NIF_TERM result = has_exception ? context->exception : context->replies;
+  ERL_NIF_TERM copied_result = enif_make_copy(env, result);
   pthread_mutex_unlock(&context->mutex);
   zxp_session_get_context_release2(context);
 
-  unsigned len = 0;
-  if (!enif_get_list_length(env, replies, &len))
+  if (has_exception)
   {
+    return copied_result;
+  }
+
+  unsigned len = 0;
+  if (!enif_get_list_length(env, copied_result, &len))
+  {
+    return enif_make_badarg(env);
   }
 
   if (len == 0)
   {
     return enif_make_tuple2(env, error_atom, timeout_atom);
   }
-  return enif_make_tuple2(env, ok_atom, replies);
+  return enif_make_tuple2(env, ok_atom, copied_result);
 }

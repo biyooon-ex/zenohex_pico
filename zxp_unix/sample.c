@@ -99,7 +99,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_byte
     z_result_t ret = z_bytes_to_slice(bytes, &slice);
     if (ret != Z_OK)
     {
-      char *reason = zxp_error_char_zp(ret);
+      const char *reason = zxp_error_char_zp(ret);
       return zxp_raise(env, __FILE__, __LINE__, reason);
     }
     term = zxp_binary_from_bytes(env, z_slice_data(z_loan(slice)), z_slice_len(z_loan(slice)));
@@ -116,7 +116,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_keyexpr(ErlNifEnv *env, const z_loaned_ke
     z_result_t ret = z_keyexpr_as_view_string(keyexpr, &string);
     if (ret != Z_OK)
     {
-      char *reason = zxp_error_char_zp(ret);
+      const char *reason = zxp_error_char_zp(ret);
       return zxp_raise(env, __FILE__, __LINE__, reason);
     }
 
@@ -134,7 +134,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_encoding(ErlNifEnv *env, const z_loaned_e
     z_result_t ret = z_encoding_to_string(encoding, &string);
     if (ret != Z_OK)
     {
-      char *reason = zxp_error_char_zp(ret);
+      const char *reason = zxp_error_char_zp(ret);
       return zxp_raise(env, __FILE__, __LINE__, reason);
     }
 

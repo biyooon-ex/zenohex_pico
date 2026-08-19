@@ -23,11 +23,31 @@ ERL_NIF_TERM zxp_to_reply_error_term(ErlNifEnv *env, const zxp_reply_error_t *re
   ERL_NIF_TERM values[] = {
       reply_error_module,
       zxp_binary_from_bytes(env, reply->payload, reply->payload_len),
-      zxp_binary_from_bytes(env, reply->encoding, strlen(reply->encoding)),
+      zxp_binary_from_bytes(env, (const uint8_t *)reply->encoding, strlen(reply->encoding)),
   };
 
   ERL_NIF_TERM term;
   enif_make_map_from_arrays(env, keys, values, 3, &term);
+  return term;
+}
+
+static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_bytes_t *bytes)
+{
+  if (bytes == NULL)
+  {
+    return nil_atom;
+  }
+
+  z_owned_slice_t slice;
+  z_result_t ret = z_bytes_to_slice(bytes, &slice);
+  if (ret != Z_OK)
+  {
+    return zxp_raise(env, __FILE__, __LINE__, zxp_error_char_zp(ret));
+  }
+
+  ERL_NIF_TERM term =
+      zxp_binary_from_bytes(env, z_slice_data(z_loan(slice)), z_slice_len(z_loan(slice)));
+  z_drop(z_move(slice));
   return term;
 }
 
@@ -39,7 +59,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_encoding(ErlNifEnv *env, const z_loaned_e
     z_result_t ret = z_encoding_to_string(encoding, &string);
     if (ret != Z_OK)
     {
-      char *reason = zxp_error_char_zp(ret);
+      const char *reason = zxp_error_char_zp(ret);
       return zxp_raise(env, __FILE__, __LINE__, reason);
     }
 
