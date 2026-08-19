@@ -4,33 +4,6 @@
 #include "helper/helper.h"
 #include "term.h"
 
-typedef struct
-{
-  uint8_t *payload;
-  size_t payload_len;
-  char *encoding;
-} zxp_reply_error_t;
-
-ERL_NIF_TERM zxp_to_reply_error_term(ErlNifEnv *env, const zxp_reply_error_t *reply)
-{
-
-  ERL_NIF_TERM keys[] = {
-      struct_atom,
-      payload_atom,
-      encoding_atom,
-  };
-
-  ERL_NIF_TERM values[] = {
-      reply_error_module,
-      zxp_binary_from_bytes(env, reply->payload, reply->payload_len),
-      zxp_binary_from_bytes(env, (const uint8_t *)reply->encoding, strlen(reply->encoding)),
-  };
-
-  ERL_NIF_TERM term;
-  enif_make_map_from_arrays(env, keys, values, 3, &term);
-  return term;
-}
-
 static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_bytes_t *bytes)
 {
   if (bytes == NULL)

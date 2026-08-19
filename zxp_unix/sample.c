@@ -4,20 +4,6 @@
 #include "helper/helper.h"
 #include "term.h"
 
-typedef struct
-{
-  uint8_t *attachment;
-  size_t attachment_len;
-  uint8_t *payload;
-  size_t payload_len;
-  char *encoding;
-  char *key_expr;
-  z_congestion_control_t congestion_control;
-  bool express;
-  z_sample_kind_t kind;
-  z_priority_t priority;
-} zxp_sample_t;
-
 static ERL_NIF_TERM zxp_priority(z_priority_t priority)
 {
   switch (priority)
@@ -39,51 +25,6 @@ static ERL_NIF_TERM zxp_priority(z_priority_t priority)
   default:
     return data_atom;
   }
-}
-
-static ERL_NIF_TERM zxp_sample_attachment(ErlNifEnv *env, const zxp_sample_t *sample)
-{
-  if (sample->attachment == NULL)
-  {
-    return nil_atom;
-  }
-  else
-  {
-    return zxp_binary_from_bytes(env, sample->attachment, sample->attachment_len);
-  }
-}
-
-ERL_NIF_TERM zxp_sample_term(ErlNifEnv *env, const zxp_sample_t *sample)
-{
-  ERL_NIF_TERM keys[] = {
-      struct_atom,
-      attachment_atom,
-      congestion_control_atom,
-      encoding_atom,
-      express_atom,
-      key_expr_atom,
-      kind_atom,
-      payload_atom,
-      priority_atom,
-      timestamp_atom,
-  };
-
-  ERL_NIF_TERM values[] = {
-      sample_module,
-      zxp_sample_attachment(env, sample),
-      sample->congestion_control == Z_CONGESTION_CONTROL_BLOCK ? block_atom : drop_atom,
-      zxp_binary_from_bytes(env, (const uint8_t *)sample->encoding, strlen(sample->encoding)),
-      sample->express ? true_atom : false_atom,
-      zxp_binary_from_bytes(env, (const uint8_t *)sample->key_expr, strlen(sample->key_expr)),
-      sample->kind == Z_SAMPLE_KIND_DELETE ? delete_atom : put_atom,
-      zxp_binary_from_bytes(env, sample->payload, sample->payload_len),
-      zxp_priority(sample->priority),
-      nil_atom,
-  };
-
-  ERL_NIF_TERM term;
-  enif_make_map_from_arrays(env, keys, values, 10, &term);
-  return term;
 }
 
 static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_bytes_t *bytes)

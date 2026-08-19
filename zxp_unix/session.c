@@ -18,18 +18,6 @@
 
 ErlNifResourceType *zxp_session_resource_type = NULL;
 
-// typedef struct
-// {
-//   pthread_mutex_t mutex;
-//   pthread_cond_t complete;
-//   size_t ref_count;
-//   bool is_complete;
-//   bool allocation_failed;
-//   zxp_session_get_reply_t *replies;
-//   size_t reply_count;
-//   size_t reply_capacity;
-// } zxp_session_get_context_t;
-
 typedef struct
 {
   pthread_mutex_t mutex;
@@ -41,37 +29,6 @@ typedef struct
   ERL_NIF_TERM replies;
   ERL_NIF_TERM exception;
 } zxp_session_get_context_2_t;
-
-// static void zxp_session_get_reply_clear(zxp_session_get_reply_t *reply)
-// {
-//   free(reply->attachment);
-//   free(reply->payload);
-//   free(reply->encoding);
-//   free(reply->key_expr);
-//   memset(reply, 0, sizeof(*reply));
-// }
-//
-// static void zxp_session_get_context_release(zxp_session_get_context_t *context)
-// {
-//   bool should_free = false;
-//
-//   pthread_mutex_lock(&context->mutex);
-//   context->ref_count--;
-//   should_free = context->ref_count == 0;
-//   pthread_mutex_unlock(&context->mutex);
-//
-//   if (should_free)
-//   {
-//     for (size_t index = 0; index < context->reply_count; index++)
-//     {
-//       zxp_session_get_reply_clear(&context->replies[index]);
-//     }
-//     free(context->replies);
-//     pthread_cond_destroy(&context->complete);
-//     pthread_mutex_destroy(&context->mutex);
-//     free(context);
-//   }
-// }
 
 static void zxp_session_get_context_release2(zxp_session_get_context_2_t *context)
 {
@@ -90,136 +47,6 @@ static void zxp_session_get_context_release2(zxp_session_get_context_2_t *contex
     enif_free(context);
   }
 }
-
-// static bool zxp_session_get_copy_buffer(const uint8_t *source, size_t length, uint8_t
-// **destination)
-// {
-//   *destination = NULL;
-//   if (length == 0)
-//   {
-//     return true;
-//   }
-//
-//   *destination = malloc(length);
-//   if (*destination == NULL)
-//   {
-//     return false;
-//   }
-//   memcpy(*destination, source, length);
-//   return true;
-// }
-//
-// static bool zxp_session_get_copy_bytes(const z_loaned_bytes_t *source, uint8_t **destination,
-//                                        size_t *length)
-// {
-//   z_owned_slice_t slice;
-//   if (z_bytes_to_slice(source, &slice) != Z_OK)
-//   {
-//     return false;
-//   }
-//
-//   *length = z_slice_len(z_loan(slice));
-//   bool copied = zxp_session_get_copy_buffer(z_slice_data(z_loan(slice)), *length, destination);
-//   z_drop(z_move(slice));
-//   return copied;
-// }
-//
-// static bool zxp_session_get_copy_string(const z_loaned_string_t *source, char **destination)
-// {
-//   size_t length = z_string_len(source);
-//   *destination = malloc(length + 1);
-//   if (*destination == NULL)
-//   {
-//     return false;
-//   }
-//   memcpy(*destination, z_string_data(source), length);
-//   (*destination)[length] = '\0';
-//   return true;
-// }
-//
-// static bool zxp_session_get_copy_encoding(const z_loaned_encoding_t *encoding, char
-// **destination)
-// {
-//   z_owned_string_t string;
-//   if (z_encoding_to_string(encoding, &string) != Z_OK)
-//   {
-//     return false;
-//   }
-//
-//   bool copied = zxp_session_get_copy_string(z_loan(string), destination);
-//   z_drop(z_move(string));
-//   return copied;
-// }
-//
-// static bool zxp_session_get_copy_keyexpr(const z_loaned_keyexpr_t *keyexpr, char **destination)
-// {
-//   z_view_string_t string;
-//   if (z_keyexpr_as_view_string(keyexpr, &string) != Z_OK)
-//   {
-//     return false;
-//   }
-//   return zxp_session_get_copy_string(z_loan(string), destination);
-// }
-//
-// static bool zxp_session_get_copy_reply(z_loaned_reply_t *reply, zxp_session_get_reply_t *result)
-// {
-//   memset(result, 0, sizeof(*result));
-//
-//   if (!z_reply_is_ok(reply))
-//   {
-//     const z_loaned_reply_err_t *error = z_reply_err(reply);
-//     result->is_error = true;
-//     return zxp_session_get_copy_bytes(
-//                z_reply_err_payload(error), &result->payload, &result->payload_len) &&
-//            zxp_session_get_copy_encoding(z_reply_err_encoding(error), &result->encoding);
-//   }
-//
-//   const z_loaned_sample_t *sample = z_reply_ok(reply);
-//   result->congestion_control = z_sample_congestion_control(sample);
-//   result->express = z_sample_express(sample);
-//   result->kind = z_sample_kind(sample);
-//   result->priority = z_sample_priority(sample);
-//
-//   const z_loaned_bytes_t *attachment = z_sample_attachment(sample);
-//   return zxp_session_get_copy_keyexpr(z_sample_keyexpr(sample), &result->key_expr) &&
-//          zxp_session_get_copy_bytes(
-//              z_sample_payload(sample), &result->payload, &result->payload_len) &&
-//          zxp_session_get_copy_encoding(z_sample_encoding(sample), &result->encoding) &&
-//          (attachment == NULL ||
-//           zxp_session_get_copy_bytes(attachment, &result->attachment, &result->attachment_len));
-// }
-
-// static void zxp_session_get_reply_handler(z_loaned_reply_t *reply, void *arg)
-// {
-//   zxp_session_get_reply_t copied_reply;
-//   if (!zxp_session_get_copy_reply(reply, &copied_reply))
-//   {
-//     zxp_session_get_reply_clear(&copied_reply);
-//     pthread_mutex_lock(&((zxp_session_get_context_t *)arg)->mutex);
-//     ((zxp_session_get_context_t *)arg)->allocation_failed = true;
-//     pthread_mutex_unlock(&((zxp_session_get_context_t *)arg)->mutex);
-//     return;
-//   }
-//
-//   zxp_session_get_context_t *context = arg;
-//   pthread_mutex_lock(&context->mutex);
-//   if (context->reply_count == context->reply_capacity)
-//   {
-//     size_t capacity = context->reply_capacity == 0 ? 4 : context->reply_capacity * 2;
-//     zxp_session_get_reply_t *replies = realloc(context->replies, capacity * sizeof(*replies));
-//     if (replies == NULL)
-//     {
-//       context->allocation_failed = true;
-//       pthread_mutex_unlock(&context->mutex);
-//       zxp_session_get_reply_clear(&copied_reply);
-//       return;
-//     }
-//     context->replies = replies;
-//     context->reply_capacity = capacity;
-//   }
-//   context->replies[context->reply_count++] = copied_reply;
-//   pthread_mutex_unlock(&context->mutex);
-// }
 
 static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
 {
@@ -256,16 +83,6 @@ static void zxp_session_get_reply_handler2(z_loaned_reply_t *reply, void *arg)
   }
   pthread_mutex_unlock(&context->mutex);
 }
-
-// static void zxp_session_get_reply_dropper(void *arg)
-// {
-//   zxp_session_get_context_t *context = arg;
-//   pthread_mutex_lock(&context->mutex);
-//   context->is_complete = true;
-//   pthread_cond_signal(&context->complete);
-//   pthread_mutex_unlock(&context->mutex);
-//   zxp_session_get_context_release(context);
-// }
 
 static void zxp_session_get_reply_dropper2(void *arg)
 {
