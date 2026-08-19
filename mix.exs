@@ -45,7 +45,7 @@ defmodule ZenohexPico.MixProject do
         format: [
           fn _ ->
             if not is_nil(System.find_executable("clang-format")) do
-              files = Path.wildcard("zxp_unix/*.{c,h}")
+              files = Path.wildcard("zxp_unix/**/*.{c,h}")
               System.cmd("clang-format", ["-i" | files])
             end
           end,
