@@ -52,6 +52,24 @@ defmodule ZenohexPico.NifTest do
       assert Nif.session_close(session) == :ok
     end
 
+    test "session_put/4 with options" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert :ok =
+               Nif.session_put(session, "zenohex_pico/test", "payload",
+                 attachment: "metadata",
+                 congestion_control: :block,
+                 encoding: "text/plain",
+                 express: true,
+                 priority: :data_high
+               )
+
+      assert :ok = Nif.session_close(session)
+    end
+
     test "session_get/4 returns timeout when there are no queryables" do
       {:ok, config} = Nif.config_default()
       {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)

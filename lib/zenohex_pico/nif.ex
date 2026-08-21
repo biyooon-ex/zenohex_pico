@@ -30,6 +30,24 @@ defmodule ZenohexPico.Nif do
   @spec session_close(reference()) :: :ok | {:error, reason :: term()}
   def session_close(_session), do: err()
 
+  @type session_put_option ::
+          {:encoding, String.t()}
+          | {:attachment, binary()}
+          | {:congestion_control, :block | :drop}
+          | {:priority,
+             :real_time
+             | :interactive_high
+             | :interactive_low
+             | :data_high
+             | :data
+             | :data_low
+             | :background}
+          | {:express, boolean()}
+
+  @spec session_put(reference(), String.t(), binary(), [session_put_option()]) ::
+          :ok | {:error, reason :: term()}
+  def session_put(_session, _keyexpr, _payload, _opts \\ []), do: err()
+
   @spec session_get(reference(), String.t(), non_neg_integer(), keyword()) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
           | {:error, :timeout}

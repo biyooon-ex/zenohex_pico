@@ -14,6 +14,7 @@
 #include "macro.h"
 #include "query.h"
 #include "sample.h"
+#include "session_option.h"
 #include "term.h"
 
 ErlNifResourceType *zxp_session_resource_type = NULL;
@@ -207,6 +208,58 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
   }
 
   z_result_t ret = z_close(z_loan_mut(*session_p), NULL);
+  if (ret != Z_OK)
+  {
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  return ok_atom;
+}
+
+ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  z_owned_session_t *session_p = NULL;
+  if (argc != 4 || !enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  {
+    return enif_make_badarg(env);
+  }
+
+  ErlNifBinary keyexpr_binary;
+  if (!enif_inspect_binary(env, argv[1], &keyexpr_binary))
+  {
+    return enif_make_badarg(env);
+  }
+
+  ErlNifBinary payload_binary;
+  if (!enif_inspect_binary(env, argv[2], &payload_binary))
+  {
+    return enif_make_badarg(env);
+  }
+
+  z_put_options_t options;
+  z_put_options_default(&options);
+  z_owned_encoding_t encoding;
+  z_owned_bytes_t attachment;
+  if (!zxp_session_put_options(env, argv[3], &options, &encoding, &attachment))
+  {
+    zxp_session_put_options_drop(&options);
+    return enif_make_badarg(env);
+  }
+
+  z_owned_keyexpr_t keyexpr;
+  z_result_t ret =
+      z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
+  if (ret != Z_OK)
+  {
+    zxp_session_put_options_drop(&options);
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  z_owned_bytes_t payload;
+  z_bytes_from_buf(&payload, payload_binary.data, payload_binary.size, NULL, NULL);
+
+  ret = z_put(z_loan(*session_p), z_loan(keyexpr), z_move(payload), &options);
+  z_drop(z_move(keyexpr));
   if (ret != Z_OK)
   {
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
