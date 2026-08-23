@@ -5,6 +5,10 @@
 #include "term.h"
 #include "timestamp.h"
 
+////
+// session_put_option
+//
+
 static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                          zxp_session_put_options_t *put_options)
 {
@@ -166,4 +170,263 @@ void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
 z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_options)
 {
   return &put_options->options;
+}
+
+////
+// session_get_option
+//
+
+static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
+                                         zxp_session_get_options_t *get_options)
+{
+  z_get_options_t *options = &get_options->options;
+  ERL_NIF_TERM head;
+  ERL_NIF_TERM tail;
+
+  while (enif_get_list_cell(env, term, &head, &tail))
+  {
+    const ERL_NIF_TERM *tuple;
+    int arity;
+    if (!enif_get_tuple(env, head, &arity, &tuple) || arity != 2)
+    {
+      return false;
+    }
+
+    if (enif_is_identical(tuple[0], payload_atom))
+    {
+      ErlNifBinary payload_binary;
+      if (!enif_inspect_binary(env, tuple[1], &payload_binary))
+      {
+        return false;
+      }
+      z_bytes_drop(options->payload);
+      if (z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size) !=
+          Z_OK)
+      {
+        return false;
+      }
+      options->payload = z_move(get_options->payload);
+    }
+    else if (enif_is_identical(tuple[0], encoding_atom))
+    {
+      ErlNifBinary encoding_binary;
+      if (!enif_inspect_binary(env, tuple[1], &encoding_binary))
+      {
+        return false;
+      }
+      z_encoding_drop(options->encoding);
+      if (z_encoding_from_substr(&get_options->encoding,
+                                 (const char *)encoding_binary.data,
+                                 encoding_binary.size) != Z_OK)
+      {
+        return false;
+      }
+      options->encoding = z_move(get_options->encoding);
+    }
+    else if (enif_is_identical(tuple[0], attachment_atom))
+    {
+      ErlNifBinary attachment_binary;
+      if (!enif_inspect_binary(env, tuple[1], &attachment_binary))
+      {
+        return false;
+      }
+      z_bytes_drop(options->attachment);
+      if (z_bytes_copy_from_buf(
+              &get_options->attachment, attachment_binary.data, attachment_binary.size) != Z_OK)
+      {
+        return false;
+      }
+      options->attachment = z_move(get_options->attachment);
+    }
+    else if (enif_is_identical(tuple[0], consolidation_atom))
+    {
+      if (enif_is_identical(tuple[1], auto_atom))
+      {
+        options->consolidation.mode = Z_CONSOLIDATION_MODE_AUTO;
+      }
+      else if (enif_is_identical(tuple[1], none_atom))
+      {
+        options->consolidation.mode = Z_CONSOLIDATION_MODE_NONE;
+      }
+      else if (enif_is_identical(tuple[1], monotonic_atom))
+      {
+        options->consolidation.mode = Z_CONSOLIDATION_MODE_MONOTONIC;
+      }
+      else if (enif_is_identical(tuple[1], latest_atom))
+      {
+        options->consolidation.mode = Z_CONSOLIDATION_MODE_LATEST;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], congestion_control_atom))
+    {
+      if (enif_is_identical(tuple[1], block_atom))
+      {
+        options->congestion_control = Z_CONGESTION_CONTROL_BLOCK;
+      }
+      else if (enif_is_identical(tuple[1], drop_atom))
+      {
+        options->congestion_control = Z_CONGESTION_CONTROL_DROP;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], priority_atom))
+    {
+      if (enif_is_identical(tuple[1], real_time_atom))
+      {
+        options->priority = Z_PRIORITY_REAL_TIME;
+      }
+      else if (enif_is_identical(tuple[1], interactive_high_atom))
+      {
+        options->priority = Z_PRIORITY_INTERACTIVE_HIGH;
+      }
+      else if (enif_is_identical(tuple[1], interactive_low_atom))
+      {
+        options->priority = Z_PRIORITY_INTERACTIVE_LOW;
+      }
+      else if (enif_is_identical(tuple[1], data_high_atom))
+      {
+        options->priority = Z_PRIORITY_DATA_HIGH;
+      }
+      else if (enif_is_identical(tuple[1], data_atom))
+      {
+        options->priority = Z_PRIORITY_DATA;
+      }
+      else if (enif_is_identical(tuple[1], data_low_atom))
+      {
+        options->priority = Z_PRIORITY_DATA_LOW;
+      }
+      else if (enif_is_identical(tuple[1], background_atom))
+      {
+        options->priority = Z_PRIORITY_BACKGROUND;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], express_atom))
+    {
+      if (enif_is_identical(tuple[1], true_atom))
+      {
+        options->is_express = true;
+      }
+      else if (enif_is_identical(tuple[1], false_atom))
+      {
+        options->is_express = false;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], target_atom))
+    {
+      if (enif_is_identical(tuple[1], best_matching_atom))
+      {
+        options->target = Z_QUERY_TARGET_BEST_MATCHING;
+      }
+      else if (enif_is_identical(tuple[1], all_atom))
+      {
+        options->target = Z_QUERY_TARGET_ALL;
+      }
+      else if (enif_is_identical(tuple[1], all_complete_atom))
+      {
+        options->target = Z_QUERY_TARGET_ALL_COMPLETE;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], accept_replies_atom))
+    {
+      if (enif_is_identical(tuple[1], matching_query_atom))
+      {
+        options->accept_replies = Z_REPLY_KEYEXPR_MATCHING_QUERY;
+      }
+      else if (enif_is_identical(tuple[1], any_atom))
+      {
+        options->accept_replies = Z_REPLY_KEYEXPR_ANY;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], query_timeout_atom))
+    {
+      if (!enif_get_uint64(env, tuple[1], &options->timeout_ms))
+      {
+        return false;
+      }
+    }
+    else if (enif_is_identical(tuple[0], allowed_destination_atom))
+    {
+#if Z_FEATURE_LOCAL_QUERYABLE == 1
+      if (enif_is_identical(tuple[1], session_local_atom))
+      {
+        options->allowed_destination = Z_LOCALITY_SESSION_LOCAL;
+      }
+      else if (enif_is_identical(tuple[1], remote_atom))
+      {
+        options->allowed_destination = Z_LOCALITY_REMOTE;
+      }
+      else if (enif_is_identical(tuple[1], any_atom))
+      {
+        options->allowed_destination = Z_LOCALITY_ANY;
+      }
+      else
+      {
+        return false;
+      }
+#else
+      return false;
+#endif
+    }
+    else
+    {
+      return false;
+    }
+    term = tail;
+  }
+
+  return enif_is_empty_list(env, term);
+}
+
+zxp_session_get_options_t *zxp_session_get_options_new(ErlNifEnv *env, ERL_NIF_TERM term)
+{
+  zxp_session_get_options_t *get_options = enif_alloc(sizeof(*get_options));
+  if (get_options == NULL)
+  {
+    return NULL;
+  }
+
+  z_get_options_default(&get_options->options);
+  if (!zxp_session_get_options_init(env, term, get_options))
+  {
+    zxp_session_get_options_drop(get_options);
+    return NULL;
+  }
+
+  return get_options;
+}
+
+void zxp_session_get_options_drop(zxp_session_get_options_t *get_options)
+{
+  z_bytes_drop(get_options->options.payload);
+  z_encoding_drop(get_options->options.encoding);
+  z_bytes_drop(get_options->options.attachment);
+  enif_free(get_options);
+}
+
+z_get_options_t *zxp_session_get_options_loan(zxp_session_get_options_t *get_options)
+{
+  return &get_options->options;
 }

@@ -97,5 +97,52 @@ defmodule ZenohexPico.NifTest do
 
       assert :ok = Nif.session_close(session)
     end
+
+    test "session_get/4 accepts supported options" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert Nif.session_get(session, "zenohex_pico/no_responder", 100,
+               accept_replies: :any,
+               attachment: "metadata",
+               congestion_control: :block,
+               consolidation: :none,
+               encoding: "text/plain",
+               express: true,
+               payload: "query payload",
+               priority: :data_high,
+               target: :all,
+               query_timeout: 10
+             ) == {:error, :timeout}
+
+      assert :ok = Nif.session_close(session)
+    end
+
+    test "session_get/4 rejects invalid options" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(session, "zenohex_pico/no_responder", 100, consolidation: :invalid)
+      end
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(session, "zenohex_pico/no_responder", 100, payload: :invalid)
+      end
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(session, "zenohex_pico/no_responder", 100, attachment: nil)
+      end
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(session, "zenohex_pico/no_responder", 100, unknown: :option)
+      end
+
+      assert :ok = Nif.session_close(session)
+    end
   end
 end

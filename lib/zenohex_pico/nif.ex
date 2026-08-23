@@ -55,7 +55,27 @@ defmodule ZenohexPico.Nif do
           :ok | {:error, reason :: term()}
   def session_put(_session, _keyexpr, _payload, _opts \\ []), do: err()
 
-  @spec session_get(reference(), String.t(), non_neg_integer(), keyword()) ::
+  @type session_get_option ::
+          {:accept_replies, :matching_query | :any}
+          | {:attachment, binary()}
+          | {:allowed_destination, :session_local | :remote | :any}
+          | {:congestion_control, :block | :drop}
+          | {:consolidation, :auto | :none | :monotonic | :latest}
+          | {:encoding, String.t()}
+          | {:express, boolean()}
+          | {:payload, binary()}
+          | {:priority,
+             :real_time
+             | :interactive_high
+             | :interactive_low
+             | :data_high
+             | :data
+             | :data_low
+             | :background}
+          | {:target, :best_matching | :all | :all_complete}
+          | {:query_timeout, non_neg_integer()}
+
+  @spec session_get(reference(), String.t(), non_neg_integer(), [session_get_option()]) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
           | {:error, :timeout}
           | {:error, reason :: term()}

@@ -12,3 +12,15 @@ typedef struct
 extern void zxp_session_put_options_drop(zxp_session_put_options_t *put_options);
 extern zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
 extern z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_options);
+
+typedef struct
+{
+  z_get_options_t options;
+  z_owned_bytes_t payload;
+  z_owned_encoding_t encoding;
+  z_owned_bytes_t attachment;
+} zxp_session_get_options_t;
+
+extern void zxp_session_get_options_drop(zxp_session_get_options_t *get_options);
+extern zxp_session_get_options_t *zxp_session_get_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
+extern z_get_options_t *zxp_session_get_options_loan(zxp_session_get_options_t *get_options);

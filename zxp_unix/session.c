@@ -94,31 +94,6 @@ static void zxp_session_get_drop_cb(void *arg)
   zxp_session_get_context_release(context);
 }
 
-static bool zxp_session_get_options(ErlNifEnv *env, ERL_NIF_TERM term, z_get_options_t *options)
-{
-  ERL_NIF_TERM head;
-  ERL_NIF_TERM tail;
-
-  while (enif_get_list_cell(env, term, &head, &tail))
-  {
-    const ERL_NIF_TERM *tuple;
-    int arity;
-    if (!enif_get_tuple(env, head, &arity, &tuple) || arity != 2)
-    {
-      return false;
-    }
-
-    if (!enif_is_identical(tuple[0], query_timeout_atom) ||
-        !enif_get_uint64(env, tuple[1], &options->timeout_ms))
-    {
-      return false;
-    }
-    term = tail;
-  }
-
-  return enif_is_empty_list(env, term);
-}
-
 static void zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
 {
   clock_gettime(CLOCK_MONOTONIC, deadline);
@@ -290,9 +265,8 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
-  z_get_options_t options;
-  z_get_options_default(&options);
-  if (!zxp_session_get_options(env, argv[3], &options))
+  zxp_session_get_options_t *get_options = zxp_session_get_options_new(env, argv[3]);
+  if (get_options == NULL)
   {
     return enif_make_badarg(env);
   }
@@ -306,6 +280,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   z_result_t ret = z_keyexpr_from_substr(&keyexpr, (const char *)selector.data, keyexpr_length);
   if (ret != Z_OK)
   {
+    zxp_session_get_options_drop(get_options);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
@@ -315,6 +290,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   if (context == NULL)
   {
     z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
@@ -323,6 +299,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   {
     enif_free(context);
     z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
@@ -332,6 +309,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
     z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
@@ -344,6 +322,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
     z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
@@ -354,6 +333,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
     z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
@@ -367,6 +347,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   {
     zxp_session_get_context_release(context);
     z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
@@ -379,8 +360,9 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
                                      parameters,
                                      parameters_length,
                                      z_move(callback),
-                                     &options);
+                                     zxp_session_get_options_loan(get_options));
   z_drop(z_move(keyexpr));
+  zxp_session_get_options_drop(get_options);
   if (ret != Z_OK)
   {
     zxp_session_get_context_release(context);

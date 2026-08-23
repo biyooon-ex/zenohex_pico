@@ -18,7 +18,13 @@ extern ERL_NIF_TERM attachment_atom;
 extern ERL_NIF_TERM express_atom;
 extern ERL_NIF_TERM key_expr_atom;
 extern ERL_NIF_TERM timestamp_atom;
+
+// query option
 extern ERL_NIF_TERM query_timeout_atom;
+extern ERL_NIF_TERM accept_replies_atom;
+extern ERL_NIF_TERM allowed_destination_atom;
+extern ERL_NIF_TERM consolidation_atom;
+extern ERL_NIF_TERM target_atom;
 
 // kind
 extern ERL_NIF_TERM kind_atom;
@@ -33,6 +39,26 @@ extern ERL_NIF_TERM reply_error_module;
 extern ERL_NIF_TERM congestion_control_atom;
 extern ERL_NIF_TERM block_atom;
 extern ERL_NIF_TERM drop_atom;
+
+// consolidation
+extern ERL_NIF_TERM auto_atom;
+extern ERL_NIF_TERM none_atom;
+extern ERL_NIF_TERM monotonic_atom;
+extern ERL_NIF_TERM latest_atom;
+
+// target
+extern ERL_NIF_TERM best_matching_atom;
+extern ERL_NIF_TERM all_atom;
+extern ERL_NIF_TERM all_complete_atom;
+
+// accept replies
+extern ERL_NIF_TERM matching_query_atom;
+extern ERL_NIF_TERM any_atom;
+
+// allowed destination
+extern ERL_NIF_TERM session_local_atom;
+extern ERL_NIF_TERM remote_atom;
+
 // priority
 extern ERL_NIF_TERM priority_atom;
 extern ERL_NIF_TERM real_time_atom;

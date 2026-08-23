@@ -21,7 +21,13 @@ ERL_NIF_TERM attachment_atom;
 ERL_NIF_TERM express_atom;
 ERL_NIF_TERM key_expr_atom;
 ERL_NIF_TERM timestamp_atom;
+
+// query option
 ERL_NIF_TERM query_timeout_atom;
+ERL_NIF_TERM accept_replies_atom;
+ERL_NIF_TERM allowed_destination_atom;
+ERL_NIF_TERM consolidation_atom;
+ERL_NIF_TERM target_atom;
 
 // kind
 ERL_NIF_TERM kind_atom;
@@ -36,6 +42,25 @@ ERL_NIF_TERM reply_error_module;
 ERL_NIF_TERM congestion_control_atom;
 ERL_NIF_TERM block_atom;
 ERL_NIF_TERM drop_atom;
+
+// consolidation
+ERL_NIF_TERM auto_atom;
+ERL_NIF_TERM none_atom;
+ERL_NIF_TERM monotonic_atom;
+ERL_NIF_TERM latest_atom;
+
+// target
+ERL_NIF_TERM best_matching_atom;
+ERL_NIF_TERM all_atom;
+ERL_NIF_TERM all_complete_atom;
+
+// accept replies
+ERL_NIF_TERM matching_query_atom;
+ERL_NIF_TERM any_atom;
+
+// allowed destination
+ERL_NIF_TERM session_local_atom;
+ERL_NIF_TERM remote_atom;
 
 // priority
 ERL_NIF_TERM priority_atom;
@@ -77,6 +102,7 @@ static ERL_NIF_TERM zxp_error_binary(ErlNifEnv *env, const char *file, int line,
 
 void zxp_init_atom(ErlNifEnv *env)
 {
+  // primitive
   ok_atom = enif_make_atom(env, "ok");
   error_atom = enif_make_atom(env, "error");
   not_found_atom = enif_make_atom(env, "not_found");
@@ -86,25 +112,55 @@ void zxp_init_atom(ErlNifEnv *env)
   true_atom = enif_make_atom(env, "true");
   false_atom = enif_make_atom(env, "false");
 
+  //
   payload_atom = enif_make_atom(env, "payload");
   encoding_atom = enif_make_atom(env, "encoding");
   attachment_atom = enif_make_atom(env, "attachment");
   express_atom = enif_make_atom(env, "express");
   key_expr_atom = enif_make_atom(env, "key_expr");
   timestamp_atom = enif_make_atom(env, "timestamp");
-  query_timeout_atom = enif_make_atom(env, "query_timeout");
 
+  // query option
+  query_timeout_atom = enif_make_atom(env, "query_timeout");
+  accept_replies_atom = enif_make_atom(env, "accept_replies");
+  allowed_destination_atom = enif_make_atom(env, "allowed_destination");
+  consolidation_atom = enif_make_atom(env, "consolidation");
+  target_atom = enif_make_atom(env, "target");
+
+  // kind
   kind_atom = enif_make_atom(env, "kind");
   delete_atom = enif_make_atom(env, "delete");
   put_atom = enif_make_atom(env, "put");
 
+  // module
   sample_module = enif_make_atom(env, "Elixir.ZenohexPico.Sample");
   reply_error_module = enif_make_atom(env, "Elixir.ZenohexPico.Query.ReplyError");
 
+  // congestion control
   congestion_control_atom = enif_make_atom(env, "congestion_control");
   block_atom = enif_make_atom(env, "block");
   drop_atom = enif_make_atom(env, "drop");
 
+  // consolidation
+  auto_atom = enif_make_atom(env, "auto");
+  none_atom = enif_make_atom(env, "none");
+  monotonic_atom = enif_make_atom(env, "monotonic");
+  latest_atom = enif_make_atom(env, "latest");
+
+  // target
+  best_matching_atom = enif_make_atom(env, "best_matching");
+  all_atom = enif_make_atom(env, "all");
+  all_complete_atom = enif_make_atom(env, "all_complete");
+
+  // accept replies
+  matching_query_atom = enif_make_atom(env, "matching_query");
+  any_atom = enif_make_atom(env, "any");
+
+  // allowed destination
+  session_local_atom = enif_make_atom(env, "session_local");
+  remote_atom = enif_make_atom(env, "remote");
+
+  // priority
   priority_atom = enif_make_atom(env, "priority");
   real_time_atom = enif_make_atom(env, "real_time");
   interactive_high_atom = enif_make_atom(env, "interactive_high");
