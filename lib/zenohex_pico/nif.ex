@@ -30,6 +30,15 @@ defmodule ZenohexPico.Nif do
   @spec session_close(reference()) :: :ok | {:error, reason :: term()}
   def session_close(_session), do: err()
 
+  @type subscriber_option :: {:allowed_origin, :session_local | :remote | :any}
+
+  @spec session_declare_subscriber(reference(), String.t(), pid(), [subscriber_option()]) ::
+          {:ok, reference()} | {:error, reason :: term()}
+  def session_declare_subscriber(_session, _key_expr, _pid, _opts \\ []), do: err()
+
+  @spec subscriber_undeclare(reference()) :: :ok | {:error, reason :: term()}
+  def subscriber_undeclare(_subscriber), do: err()
+
   @type session_put_option ::
           {:encoding, String.t()}
           | {:attachment, binary()}

@@ -52,6 +52,39 @@ defmodule ZenohexPico.NifTest do
       assert Nif.session_close(session) == :ok
     end
 
+    test "session_declare_subscriber/4 and subscriber_undeclare/1" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert {:ok, subscriber} =
+               Nif.session_declare_subscriber(session, "zenohex_pico/test", self(), [])
+
+      assert is_reference(subscriber)
+      assert :ok = Nif.subscriber_undeclare(subscriber)
+      assert {:error, :not_found} = Nif.subscriber_undeclare(subscriber)
+      assert :ok = Nif.session_close(session)
+    end
+
+    test "session_declare_subscriber/4 rejects unsupported options" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_declare_subscriber(
+          session,
+          "zenohex_pico/test",
+          self(),
+          allowed_origin: :any
+        )
+      end
+
+      assert :ok = Nif.session_close(session)
+    end
+
     test "session_put/4 with options" do
       {:ok, config} = Nif.config_default()
       {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)

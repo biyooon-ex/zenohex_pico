@@ -23,6 +23,7 @@ extern ERL_NIF_TERM timestamp_atom;
 extern ERL_NIF_TERM query_timeout_atom;
 extern ERL_NIF_TERM accept_replies_atom;
 extern ERL_NIF_TERM allowed_destination_atom;
+extern ERL_NIF_TERM allowed_origin_atom;
 extern ERL_NIF_TERM consolidation_atom;
 extern ERL_NIF_TERM target_atom;
 
