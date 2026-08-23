@@ -64,8 +64,24 @@ defmodule ZenohexPico.NifTest do
                  congestion_control: :block,
                  encoding: "text/plain",
                  express: true,
-                 priority: :data_high
+                 priority: :data_high,
+                 timestamp: "2025-07-16T01:34:56.871273403Z/208a2ec783ec4527a39cc1d5559c70e9"
                )
+
+      assert :ok = Nif.session_close(session)
+    end
+
+    test "session_put/4 rejects malformed timestamp options" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_put(session, "zenohex_pico/test", "payload",
+          timestamp: "2025-07-16T01:34:56Z/not-a-zenoh-id"
+        )
+      end
 
       assert :ok = Nif.session_close(session)
     end

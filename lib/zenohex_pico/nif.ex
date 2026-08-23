@@ -43,7 +43,14 @@ defmodule ZenohexPico.Nif do
              | :data_low
              | :background}
           | {:express, boolean()}
+          | {:timestamp, String.t()}
 
+  @doc """
+  Publishes a payload with optional Zenoh metadata.
+
+  `:timestamp` must use Zenohex's UTC timestamp form:
+  `YYYY-MM-DDTHH:MM:SS.nnnnnnnnnZ/<32 lowercase hexadecimal digits>`.
+  """
   @spec session_put(reference(), String.t(), binary(), [session_put_option()]) ::
           :ok | {:error, reason :: term()}
   def session_put(_session, _keyexpr, _payload, _opts \\ []), do: err()

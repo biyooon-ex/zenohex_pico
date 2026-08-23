@@ -3,6 +3,7 @@
 
 #include "session_option.h"
 #include "term.h"
+#include "timestamp.h"
 
 static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                          zxp_session_put_options_t *put_options)
@@ -116,6 +117,16 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
     }
+    else if (enif_is_identical(tuple[0], timestamp_atom))
+    {
+      ErlNifBinary timestamp_binary;
+      if (!enif_inspect_binary(env, tuple[1], &timestamp_binary) ||
+          !zxp_timestamp_from_binary(&timestamp_binary, &put_options->timestamp))
+      {
+        return false;
+      }
+      options->timestamp = &put_options->timestamp;
+    }
     else
     {
       return false;
@@ -135,6 +146,7 @@ zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_T
   }
 
   z_put_options_default(&put_options->options);
+  put_options->timestamp = _z_timestamp_null();
   if (!zxp_session_put_options_init(env, term, put_options))
   {
     zxp_session_put_options_drop(put_options);
@@ -151,7 +163,7 @@ void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
   enif_free(put_options);
 }
 
-const z_put_options_t *zxp_session_put_options_loan(const zxp_session_put_options_t *put_options)
+z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_options)
 {
   return &put_options->options;
 }

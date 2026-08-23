@@ -6,9 +6,9 @@ typedef struct
   z_put_options_t options;
   z_owned_encoding_t encoding;
   z_owned_bytes_t attachment;
+  z_timestamp_t timestamp;
 } zxp_session_put_options_t;
 
 extern void zxp_session_put_options_drop(zxp_session_put_options_t *put_options);
 extern zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
-extern const z_put_options_t *
-zxp_session_put_options_loan(const zxp_session_put_options_t *put_options);
+extern z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_options);

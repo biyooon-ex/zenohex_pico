@@ -17,7 +17,7 @@ defmodule ZenohexPico.Sample do
             | :data
             | :data_low
             | :background,
-          timestamp: nil
+          timestamp: String.t() | nil
         }
 
   defstruct attachment: nil,
