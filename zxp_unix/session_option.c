@@ -1,17 +1,13 @@
 #include <erl_nif.h>
 #include <zenoh-pico.h>
 
+#include "session_option.h"
 #include "term.h"
 
-void zxp_session_put_options_drop(z_put_options_t *options)
+static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
+                                         zxp_session_put_options_t *put_options)
 {
-  z_encoding_drop(options->encoding);
-  z_bytes_drop(options->attachment);
-}
-
-bool zxp_session_put_options(ErlNifEnv *env, ERL_NIF_TERM term, z_put_options_t *options,
-                             z_owned_encoding_t *encoding, z_owned_bytes_t *attachment)
-{
+  z_put_options_t *options = &put_options->options;
   ERL_NIF_TERM head;
   ERL_NIF_TERM tail;
 
@@ -32,12 +28,13 @@ bool zxp_session_put_options(ErlNifEnv *env, ERL_NIF_TERM term, z_put_options_t 
         return false;
       }
       z_encoding_drop(options->encoding);
-      if (z_encoding_from_substr(
-              encoding, (const char *)encoding_binary.data, encoding_binary.size) != Z_OK)
+      if (z_encoding_from_substr(&put_options->encoding,
+                                 (const char *)encoding_binary.data,
+                                 encoding_binary.size) != Z_OK)
       {
         return false;
       }
-      options->encoding = z_move(*encoding);
+      options->encoding = z_move(put_options->encoding);
     }
     else if (enif_is_identical(tuple[0], attachment_atom))
     {
@@ -47,11 +44,12 @@ bool zxp_session_put_options(ErlNifEnv *env, ERL_NIF_TERM term, z_put_options_t 
         return false;
       }
       z_bytes_drop(options->attachment);
-      if (z_bytes_copy_from_buf(attachment, attachment_binary.data, attachment_binary.size) != Z_OK)
+      if (z_bytes_copy_from_buf(
+              &put_options->attachment, attachment_binary.data, attachment_binary.size) != Z_OK)
       {
         return false;
       }
-      options->attachment = z_move(*attachment);
+      options->attachment = z_move(put_options->attachment);
     }
     else if (enif_is_identical(tuple[0], congestion_control_atom))
     {
@@ -126,4 +124,34 @@ bool zxp_session_put_options(ErlNifEnv *env, ERL_NIF_TERM term, z_put_options_t 
   }
 
   return enif_is_empty_list(env, term);
+}
+
+zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term)
+{
+  zxp_session_put_options_t *put_options = enif_alloc(sizeof(*put_options));
+  if (put_options == NULL)
+  {
+    return NULL;
+  }
+
+  z_put_options_default(&put_options->options);
+  if (!zxp_session_put_options_init(env, term, put_options))
+  {
+    zxp_session_put_options_drop(put_options);
+    return NULL;
+  }
+
+  return put_options;
+}
+
+void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
+{
+  z_encoding_drop(put_options->options.encoding);
+  z_bytes_drop(put_options->options.attachment);
+  enif_free(put_options);
+}
+
+const z_put_options_t *zxp_session_put_options_loan(const zxp_session_put_options_t *put_options)
+{
+  return &put_options->options;
 }

@@ -1,6 +1,14 @@
 #include <erl_nif.h>
 #include <zenoh-pico.h>
 
-extern void zxp_session_put_options_drop(z_put_options_t *options);
-extern bool zxp_session_put_options(ErlNifEnv *env, ERL_NIF_TERM term, z_put_options_t *options,
-                                    z_owned_encoding_t *encoding, z_owned_bytes_t *attachment);
+typedef struct
+{
+  z_put_options_t options;
+  z_owned_encoding_t encoding;
+  z_owned_bytes_t attachment;
+} zxp_session_put_options_t;
+
+extern void zxp_session_put_options_drop(zxp_session_put_options_t *put_options);
+extern zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
+extern const z_put_options_t *
+zxp_session_put_options_loan(const zxp_session_put_options_t *put_options);

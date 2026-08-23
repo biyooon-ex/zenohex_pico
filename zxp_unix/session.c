@@ -236,13 +236,9 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
-  z_put_options_t options;
-  z_put_options_default(&options);
-  z_owned_encoding_t encoding;
-  z_owned_bytes_t attachment;
-  if (!zxp_session_put_options(env, argv[3], &options, &encoding, &attachment))
+  zxp_session_put_options_t *put_options = zxp_session_put_options_new(env, argv[3]);
+  if (put_options == NULL)
   {
-    zxp_session_put_options_drop(&options);
     return enif_make_badarg(env);
   }
 
@@ -251,15 +247,19 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
       z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
   if (ret != Z_OK)
   {
-    zxp_session_put_options_drop(&options);
+    zxp_session_put_options_drop(put_options);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
   z_owned_bytes_t payload;
   z_bytes_from_buf(&payload, payload_binary.data, payload_binary.size, NULL, NULL);
 
-  ret = z_put(z_loan(*session_p), z_loan(keyexpr), z_move(payload), &options);
+  ret = z_put(z_loan(*session_p),
+              z_loan(keyexpr),
+              z_move(payload),
+              zxp_session_put_options_loan(put_options));
   z_drop(z_move(keyexpr));
+  zxp_session_put_options_drop(put_options);
   if (ret != Z_OK)
   {
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
