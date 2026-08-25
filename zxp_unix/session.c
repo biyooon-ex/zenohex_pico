@@ -157,8 +157,7 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
     }
   }
 
-  z_owned_session_t *session_p =
-      enif_alloc_resource(zxp_session_resource_type, sizeof(z_owned_session_t));
+  z_owned_session_t *session_p = enif_alloc_resource(zxp_session_resource_type, sizeof(*session_p));
   if (session_p == NULL)
   {
     z_drop(z_move(session));
@@ -195,16 +194,22 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
 
 ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
+  UNUSED(argc);
+
   z_owned_session_t *session_p = NULL;
-  if (argc != 4 || !enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
   {
     return enif_make_badarg(env);
   }
 
   ErlNifBinary keyexpr_binary;
+  if (!enif_inspect_binary(env, argv[1], &keyexpr_binary))
+  {
+    return enif_make_badarg(env);
+  }
+
   ErlNifPid pid;
-  if (!enif_inspect_binary(env, argv[1], &keyexpr_binary) ||
-      !enif_get_local_pid(env, argv[2], &pid))
+  if (!enif_get_local_pid(env, argv[2], &pid))
   {
     return enif_make_badarg(env);
   }
@@ -224,30 +229,18 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  zxp_subscriber_t *subscriber =
-      enif_alloc_resource(zxp_subscriber_resource_type, sizeof(*subscriber));
-  if (subscriber == NULL)
+  zxp_subscriber_context_t *context = zxp_subscriber_context_new(&pid);
+  if (context == NULL)
   {
-    z_drop(z_move(keyexpr));
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
-  }
-  *subscriber = (zxp_subscriber_t){0};
-  z_internal_null(&subscriber->subscriber);
-
-  if (!zxp_subscriber_init(subscriber, &pid))
-  {
-    enif_release_resource(subscriber);
     z_drop(z_move(keyexpr));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
   z_owned_closure_sample_t callback;
-  ret = z_closure_sample(
-      &callback, zxp_subscriber_sample_cb, zxp_subscriber_drop_cb, subscriber->context);
+  ret = z_closure_sample(&callback, zxp_subscriber_sample_cb, zxp_subscriber_drop_cb, context);
   if (ret != Z_OK)
   {
-    zxp_subscriber_shutdown(subscriber, false);
-    enif_release_resource(subscriber);
+    zxp_subscriber_drop_cb(context);
     z_drop(z_move(keyexpr));
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
@@ -259,12 +252,19 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
   z_drop(z_move(keyexpr));
   if (ret != Z_OK)
   {
-    zxp_subscriber_shutdown(subscriber, false);
-    enif_release_resource(subscriber);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  z_take(&subscriber->subscriber, z_move(owned_subscriber));
+  z_owned_subscriber_t *subscriber =
+      enif_alloc_resource(zxp_subscriber_resource_type, sizeof(*subscriber));
+  if (subscriber == NULL)
+  {
+    z_drop(z_move(owned_subscriber));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  z_internal_null(subscriber);
+  z_take(subscriber, z_move(owned_subscriber));
   ERL_NIF_TERM subscriber_ref = enif_make_resource(env, subscriber);
   enif_release_resource(subscriber);
   return enif_make_tuple2(env, ok_atom, subscriber_ref);
@@ -272,8 +272,10 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
 
 ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
+  UNUSED(argc);
+
   z_owned_session_t *session_p = NULL;
-  if (argc != 4 || !enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
   {
     return enif_make_badarg(env);
   }

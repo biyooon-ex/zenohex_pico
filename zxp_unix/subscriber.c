@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <zenoh-pico.h>
+#include <zenoh-pico/utils/result.h>
 
 #include "macro.h"
 #include "sample.h"
@@ -25,9 +26,9 @@ struct zxp_subscriber_context
   pthread_t forwarder;
   ErlNifPid pid;
   z_owned_sample_t queue[ZXP_SUBSCRIBER_QUEUE_CAPACITY];
-  size_t head;
-  size_t tail;
-  size_t count;
+  size_t dequeue_index;
+  size_t enqueue_index;
+  size_t queued_count;
   bool stopping;
   bool forwarder_started;
   zxp_subscriber_queue_policy_t queue_policy;
@@ -35,7 +36,7 @@ struct zxp_subscriber_context
 
 ErlNifResourceType *zxp_subscriber_resource_type = NULL;
 
-static void zxp_subscriber_context_clear(zxp_subscriber_context_t *context)
+static void zxp_subscriber_context_release(zxp_subscriber_context_t *context)
 {
   for (size_t index = 0; index < ZXP_SUBSCRIBER_QUEUE_CAPACITY; index++)
   {
@@ -53,6 +54,10 @@ static void *zxp_subscriber_forwarder(void *arg)
   ErlNifEnv *env = enif_alloc_env();
   if (env == NULL)
   {
+    pthread_mutex_lock(&context->mutex);
+    context->stopping = true;
+    pthread_cond_broadcast(&context->not_full);
+    pthread_mutex_unlock(&context->mutex);
     return NULL;
   }
 
@@ -62,7 +67,7 @@ static void *zxp_subscriber_forwarder(void *arg)
     z_internal_null(&sample);
 
     pthread_mutex_lock(&context->mutex);
-    while (context->count == 0 && !context->stopping)
+    while (context->queued_count == 0 && !context->stopping)
     {
       pthread_cond_wait(&context->not_empty, &context->mutex);
     }
@@ -73,9 +78,9 @@ static void *zxp_subscriber_forwarder(void *arg)
       break;
     }
 
-    z_take(&sample, z_move(context->queue[context->head]));
-    context->head = (context->head + 1) % ZXP_SUBSCRIBER_QUEUE_CAPACITY;
-    context->count--;
+    z_take(&sample, z_move(context->queue[context->dequeue_index]));
+    context->dequeue_index = (context->dequeue_index + 1) % ZXP_SUBSCRIBER_QUEUE_CAPACITY;
+    context->queued_count--;
     pthread_cond_signal(&context->not_full);
     pthread_mutex_unlock(&context->mutex);
 
@@ -103,16 +108,22 @@ void zxp_subscriber_sample_cb(z_loaned_sample_t *sample, void *arg)
   }
 
   pthread_mutex_lock(&context->mutex);
-  while (context->count == ZXP_SUBSCRIBER_QUEUE_CAPACITY && !context->stopping)
+  if (context->queued_count == ZXP_SUBSCRIBER_QUEUE_CAPACITY)
   {
-    if (context->queue_policy == ZXP_SUBSCRIBER_QUEUE_RING)
+    switch (context->queue_policy)
     {
-      z_drop(z_move(context->queue[context->head]));
-      context->head = (context->head + 1) % ZXP_SUBSCRIBER_QUEUE_CAPACITY;
-      context->count--;
+    case ZXP_SUBSCRIBER_QUEUE_FIFO:
+      while (context->queued_count == ZXP_SUBSCRIBER_QUEUE_CAPACITY && !context->stopping)
+      {
+        pthread_cond_wait(&context->not_full, &context->mutex);
+      }
+      break;
+    case ZXP_SUBSCRIBER_QUEUE_RING:
+      z_drop(z_move(context->queue[context->dequeue_index]));
+      context->dequeue_index = (context->dequeue_index + 1) % ZXP_SUBSCRIBER_QUEUE_CAPACITY;
+      context->queued_count--;
       break;
     }
-    pthread_cond_wait(&context->not_full, &context->mutex);
   }
 
   if (context->stopping)
@@ -122,21 +133,19 @@ void zxp_subscriber_sample_cb(z_loaned_sample_t *sample, void *arg)
     return;
   }
 
-  z_take(&context->queue[context->tail], z_move(copy));
-  context->tail = (context->tail + 1) % ZXP_SUBSCRIBER_QUEUE_CAPACITY;
-  context->count++;
+  z_take(&context->queue[context->enqueue_index], z_move(copy));
+  context->enqueue_index = (context->enqueue_index + 1) % ZXP_SUBSCRIBER_QUEUE_CAPACITY;
+  context->queued_count++;
   pthread_cond_signal(&context->not_empty);
   pthread_mutex_unlock(&context->mutex);
 }
 
-void zxp_subscriber_drop_cb(void *arg) { UNUSED(arg); }
-
-bool zxp_subscriber_init(zxp_subscriber_t *subscriber, const ErlNifPid *pid)
+zxp_subscriber_context_t *zxp_subscriber_context_new(const ErlNifPid *pid)
 {
   zxp_subscriber_context_t *context = enif_alloc(sizeof(*context));
   if (context == NULL)
   {
-    return false;
+    return NULL;
   }
 
   *context = (zxp_subscriber_context_t){
@@ -150,41 +159,34 @@ bool zxp_subscriber_init(zxp_subscriber_t *subscriber, const ErlNifPid *pid)
   if (pthread_mutex_init(&context->mutex, NULL) != 0)
   {
     enif_free(context);
-    return false;
+    return NULL;
   }
   if (pthread_cond_init(&context->not_empty, NULL) != 0)
   {
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
-    return false;
+    return NULL;
   }
   if (pthread_cond_init(&context->not_full, NULL) != 0)
   {
     pthread_cond_destroy(&context->not_empty);
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
-    return false;
+    return NULL;
   }
   if (pthread_create(&context->forwarder, NULL, zxp_subscriber_forwarder, context) != 0)
   {
-    zxp_subscriber_context_clear(context);
-    return false;
+    zxp_subscriber_context_release(context);
+    return NULL;
   }
 
   context->forwarder_started = true;
-  z_internal_null(&subscriber->subscriber);
-  subscriber->context = context;
-  subscriber->undeclared = false;
-  return true;
+  return context;
 }
 
-z_result_t zxp_subscriber_shutdown(zxp_subscriber_t *subscriber, bool undeclare)
+void zxp_subscriber_drop_cb(void *arg)
 {
-  zxp_subscriber_context_t *context = subscriber->context;
-  if (context == NULL)
-  {
-    return Z_OK;
-  }
+  zxp_subscriber_context_t *context = arg;
 
   pthread_mutex_lock(&context->mutex);
   context->stopping = true;
@@ -192,39 +194,18 @@ z_result_t zxp_subscriber_shutdown(zxp_subscriber_t *subscriber, bool undeclare)
   pthread_cond_broadcast(&context->not_full);
   pthread_mutex_unlock(&context->mutex);
 
-  if (!subscriber->undeclared)
-  {
-    if (undeclare)
-    {
-      z_result_t result = z_undeclare_subscriber(z_move(subscriber->subscriber));
-      subscriber->undeclared = true;
-      if (context->forwarder_started)
-      {
-        pthread_join(context->forwarder, NULL);
-      }
-      zxp_subscriber_context_clear(context);
-      subscriber->context = NULL;
-      return result;
-    }
-    else
-    {
-      z_drop(z_move(subscriber->subscriber));
-    }
-    subscriber->undeclared = true;
-  }
   if (context->forwarder_started)
   {
     pthread_join(context->forwarder, NULL);
   }
-  zxp_subscriber_context_clear(context);
-  subscriber->context = NULL;
-  return Z_OK;
+  zxp_subscriber_context_release(context);
 }
 
 static void zxp_subscriber_dtor(ErlNifEnv *env, void *obj)
 {
   UNUSED(env);
-  (void)zxp_subscriber_shutdown((zxp_subscriber_t *)obj, false);
+  z_owned_subscriber_t *subscriber = obj;
+  z_drop(z_move(*subscriber));
 }
 
 static const ErlNifResourceTypeInit ZxpSubscriberResourceTypeInit = {
@@ -242,20 +223,17 @@ ERL_NIF_TERM zxp_subscriber_undeclare(ErlNifEnv *env, int argc, const ERL_NIF_TE
 {
   UNUSED(argc);
 
-  zxp_subscriber_t *subscriber = NULL;
+  z_owned_subscriber_t *subscriber = NULL;
   if (!enif_get_resource(env, argv[0], zxp_subscriber_resource_type, (void **)&subscriber))
   {
     return enif_make_badarg(env);
   }
-  if (subscriber->undeclared)
+
+  z_result_t ret = z_undeclare_subscriber(z_move(*subscriber));
+  if (ret != Z_OK)
   {
-    return enif_make_tuple2(env, error_atom, not_found_atom);
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  z_result_t result = zxp_subscriber_shutdown(subscriber, true);
-  if (result != Z_OK)
-  {
-    return zxp_error_tuple_zp(env, __FILE__, __LINE__, result);
-  }
   return ok_atom;
 }

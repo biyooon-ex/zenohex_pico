@@ -63,7 +63,7 @@ defmodule ZenohexPico.NifTest do
 
       assert is_reference(subscriber)
       assert :ok = Nif.subscriber_undeclare(subscriber)
-      assert {:error, :not_found} = Nif.subscriber_undeclare(subscriber)
+      assert {:error, _reason} = Nif.subscriber_undeclare(subscriber)
       assert :ok = Nif.session_close(session)
     end
 
