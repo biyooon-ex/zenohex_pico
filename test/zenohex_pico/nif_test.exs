@@ -27,8 +27,13 @@ defmodule ZenohexPico.NifTest do
     test "config_insert/3" do
       {:ok, config} = Nif.config_default()
       {:ok, @z_config_mode_client} = Nif.config_get(config, @z_config_mode_key)
-      assert {:ok, ^config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
-      assert {:ok, @z_config_mode_peer} = Nif.config_get(config, @z_config_mode_key)
+
+      assert {:ok, updated_config} =
+               Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+
+      refute updated_config == config
+      assert {:ok, @z_config_mode_client} = Nif.config_get(config, @z_config_mode_key)
+      assert {:ok, @z_config_mode_peer} = Nif.config_get(updated_config, @z_config_mode_key)
     end
   end
 

@@ -38,8 +38,7 @@ ERL_NIF_TERM zxp_config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM arg
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  z_owned_config_t *config_p =
-      enif_alloc_resource(zxp_config_resource_type, sizeof(z_owned_config_t));
+  z_owned_config_t *config_p = enif_alloc_resource(zxp_config_resource_type, sizeof(*config_p));
   if (config_p == NULL)
   {
     z_drop(z_move(config));
@@ -132,13 +131,28 @@ ERL_NIF_TERM zxp_config_insert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
   memcpy(value, bin.data, bin.size);
   value[bin.size] = '\0';
 
-  z_result_t ret = zp_config_insert(z_loan_mut(*config_p), key, value);
+  z_owned_config_t *new_config_p =
+      enif_alloc_resource(zxp_config_resource_type, sizeof(*new_config_p));
+  if (new_config_p == NULL)
+  {
+    enif_free(value);
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  z_internal_null(new_config_p);
+  z_config_clone(new_config_p, z_loan(*config_p));
+
+  z_result_t ret = zp_config_insert(z_loan_mut(*new_config_p), key, value);
   enif_free(value);
 
   if (ret != Z_OK)
   {
+    enif_release_resource(new_config_p);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
 
-  return enif_make_tuple2(env, ok_atom, argv[0]);
+  ERL_NIF_TERM new_config_ref = enif_make_resource(env, new_config_p);
+  enif_release_resource(new_config_p);
+
+  return enif_make_tuple2(env, ok_atom, new_config_ref);
 }
