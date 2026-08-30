@@ -39,6 +39,7 @@ defmodule ZenohexPico.NifTest do
 
       assert {:ok, session} = Nif.session_open(config)
       assert is_reference(session)
+      assert Nif.session_close(session) == :ok
     end
 
     test "session_close/1" do
@@ -48,8 +49,24 @@ defmodule ZenohexPico.NifTest do
       {:ok, session} = Nif.session_open(config)
 
       assert Nif.session_close(session) == :ok
-      # Ensure closing an already-closed session is safe.
-      assert Nif.session_close(session) == :ok
+      assert Nif.session_close(session) == {:error, :closed}
+
+      assert {:ok, reopened_session} = Nif.session_open(config)
+      assert Nif.session_close(reopened_session) == :ok
+    end
+
+    test "session operations reject a closed session" do
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, session} = Nif.session_open(config)
+
+      assert :ok = Nif.session_close(session)
+      assert {:error, :closed} = Nif.session_put(session, "zenohex_pico/test", "payload")
+      assert {:error, :closed} = Nif.session_get(session, "zenohex_pico/test", 100)
+
+      assert {:error, :closed} =
+               Nif.session_declare_subscriber(session, "zenohex_pico/test", self())
     end
 
     test "session_put/4 with options" do

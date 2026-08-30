@@ -183,11 +183,14 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
     return enif_make_badarg(env);
   }
 
-  z_result_t ret = z_close(z_loan_mut(*session_p), NULL);
-  if (ret != Z_OK)
+  if (!z_internal_session_check(session_p))
   {
-    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+    return enif_make_tuple2(env, error_atom, closed_atom);
   }
+
+  // Release session-owned transports now because the NIF resource destructor is GC-driven.
+  z_drop(z_move(*session_p));
+  z_internal_null(session_p);
 
   return ok_atom;
 }
@@ -200,6 +203,11 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
   if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
   {
     return enif_make_badarg(env);
+  }
+
+  if (!z_internal_session_check(session_p))
+  {
+    return enif_make_tuple2(env, error_atom, closed_atom);
   }
 
   ErlNifBinary keyexpr_binary;
@@ -280,6 +288,11 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
+  if (!z_internal_session_check(session_p))
+  {
+    return enif_make_tuple2(env, error_atom, closed_atom);
+  }
+
   ErlNifBinary keyexpr_binary;
   if (!enif_inspect_binary(env, argv[1], &keyexpr_binary))
   {
@@ -332,6 +345,11 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
   {
     return enif_make_badarg(env);
+  }
+
+  if (!z_internal_session_check(session_p))
+  {
+    return enif_make_tuple2(env, error_atom, closed_atom);
   }
 
   ErlNifBinary selector;

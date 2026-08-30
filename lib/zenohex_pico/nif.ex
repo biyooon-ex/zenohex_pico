@@ -27,7 +27,7 @@ defmodule ZenohexPico.Nif do
   @spec session_open(reference()) :: {:ok, reference()} | {:error, reason :: term()}
   def session_open(_config), do: err()
 
-  @spec session_close(reference()) :: :ok | {:error, reason :: term()}
+  @spec session_close(reference()) :: :ok | {:error, :closed} | {:error, reason :: term()}
   def session_close(_session), do: err()
 
   @type subscriber_option :: {:allowed_origin, :session_local | :remote | :any}
