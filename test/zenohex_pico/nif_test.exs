@@ -6,6 +6,7 @@ defmodule ZenohexPico.NifTest do
   @z_config_mode_key 0x40
   @z_config_mode_client "client"
   @z_config_mode_peer "peer"
+  @z_config_connect_key 0x41
   @z_config_listen_key 0x42
 
   test "test_raise/0" do
@@ -161,13 +162,34 @@ defmodule ZenohexPico.NifTest do
       {:ok, config} = Nif.config_default()
       {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
       {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/0.0.0.0:7447")
+      {:ok, listen_session} = Nif.session_open(config)
+      on_exit(fn -> :ok = Nif.session_close(listen_session) end)
+
+      assert {:ok, subscriber} =
+               Nif.session_declare_subscriber(listen_session, "zenohex_pico/test", self(), [])
+
+      assert is_reference(subscriber)
+
+      {:ok, config} = Nif.config_default()
+      {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
+      {:ok, config} = Nif.config_insert(config, @z_config_connect_key, "tcp/127.0.0.1:7447")
       {:ok, session} = Nif.session_open(config)
       on_exit(fn -> :ok = Nif.session_close(session) end)
 
-      assert {:ok, subscriber} =
-               Nif.session_declare_subscriber(session, "zenohex_pico/test", self(), [])
+      :ok = Nif.session_put(session, "zenohex_pico/test", "payload")
 
-      assert is_reference(subscriber)
+      assert_receive %ZenohexPico.Sample{
+        attachment: "",
+        congestion_control: :drop,
+        encoding: "zenoh/bytes",
+        express: false,
+        key_expr: "zenohex_pico/test",
+        kind: :put,
+        payload: "payload",
+        priority: :data,
+        timestamp: nil
+      }
+
       assert :ok = Nif.subscriber_undeclare(subscriber)
       assert {:error, _reason} = Nif.subscriber_undeclare(subscriber)
     end
