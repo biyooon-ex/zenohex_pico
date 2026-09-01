@@ -24,6 +24,13 @@ ErlNifResourceType *zxp_session_resource_type = NULL;
 typedef struct
 {
   pthread_mutex_t mutex;
+  z_owned_session_t session;
+  bool is_mutex_initialized;
+} zxp_session_resource_t;
+
+typedef struct
+{
+  pthread_mutex_t mutex;
   pthread_cond_t complete;
   bool is_z_get_complete;
   size_t ref_count;
@@ -112,8 +119,28 @@ static void zxp_session_dtor(ErlNifEnv *env, void *obj)
 {
   UNUSED(env);
 
-  z_owned_session_t *session_p = (z_owned_session_t *)obj;
-  z_drop(z_move(*session_p));
+  zxp_session_resource_t *resource = obj;
+  if (!resource->is_mutex_initialized)
+  {
+    return;
+  }
+
+  z_owned_session_t session;
+  z_internal_null(&session);
+
+  pthread_mutex_lock(&resource->mutex);
+  if (z_internal_session_check(&resource->session))
+  {
+    z_take(&session, z_move(resource->session));
+    z_internal_null(&resource->session);
+  }
+  pthread_mutex_unlock(&resource->mutex);
+
+  if (z_internal_session_check(&session))
+  {
+    z_drop(z_move(session));
+  }
+  pthread_mutex_destroy(&resource->mutex);
 }
 
 static const ErlNifResourceTypeInit ZxpSessionResourceTypeInit = {
@@ -157,18 +184,28 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
     }
   }
 
-  z_owned_session_t *session_p = enif_alloc_resource(zxp_session_resource_type, sizeof(*session_p));
-  if (session_p == NULL)
+  zxp_session_resource_t *resource =
+      enif_alloc_resource(zxp_session_resource_type, sizeof(*resource));
+  if (resource == NULL)
   {
     z_drop(z_move(session));
     return zxp_raise_null_pointer(env, __FILE__, __LINE__);
   }
 
-  z_internal_null(session_p);
-  z_take(session_p, z_move(session));
+  z_internal_null(&resource->session);
+  resource->is_mutex_initialized = false;
+  if (pthread_mutex_init(&resource->mutex, NULL) != 0)
+  {
+    z_drop(z_move(session));
+    enif_release_resource(resource);
+    return zxp_raise(env, __FILE__, __LINE__, "pthread_mutex_init/2 failed");
+  }
 
-  ERL_NIF_TERM session_ref = enif_make_resource(env, session_p);
-  enif_release_resource(session_p);
+  resource->is_mutex_initialized = true;
+  z_take(&resource->session, z_move(session));
+
+  ERL_NIF_TERM session_ref = enif_make_resource(env, resource);
+  enif_release_resource(resource);
 
   return enif_make_tuple2(env, ok_atom, session_ref);
 }
@@ -177,20 +214,28 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
 {
   UNUSED(argc);
 
-  z_owned_session_t *session_p = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  zxp_session_resource_t *resource = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
   {
     return enif_make_badarg(env);
   }
 
-  if (!z_internal_session_check(session_p))
+  z_owned_session_t session;
+  z_internal_null(&session);
+
+  pthread_mutex_lock(&resource->mutex);
+  if (!z_internal_session_check(&resource->session))
   {
+    pthread_mutex_unlock(&resource->mutex);
     return enif_make_tuple2(env, error_atom, closed_atom);
   }
 
+  z_take(&session, z_move(resource->session));
+  z_internal_null(&resource->session);
+  pthread_mutex_unlock(&resource->mutex);
+
   // Release session-owned transports now because the NIF resource destructor is GC-driven.
-  z_drop(z_move(*session_p));
-  z_internal_null(session_p);
+  z_drop(z_move(session));
 
   return ok_atom;
 }
@@ -199,15 +244,10 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
 {
   UNUSED(argc);
 
-  z_owned_session_t *session_p = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  zxp_session_resource_t *resource = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
   {
     return enif_make_badarg(env);
-  }
-
-  if (!z_internal_session_check(session_p))
-  {
-    return enif_make_tuple2(env, error_atom, closed_atom);
   }
 
   ErlNifBinary keyexpr_binary;
@@ -255,8 +295,18 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
 
   z_owned_subscriber_t owned_subscriber;
   z_internal_null(&owned_subscriber);
+  pthread_mutex_lock(&resource->mutex);
+  if (!z_internal_session_check(&resource->session))
+  {
+    pthread_mutex_unlock(&resource->mutex);
+    z_drop(z_move(callback));
+    z_drop(z_move(keyexpr));
+    return enif_make_tuple2(env, error_atom, closed_atom);
+  }
+
   ret = z_declare_subscriber(
-      z_loan(*session_p), &owned_subscriber, z_loan(keyexpr), z_move(callback), &options);
+      z_loan(resource->session), &owned_subscriber, z_loan(keyexpr), z_move(callback), &options);
+  pthread_mutex_unlock(&resource->mutex);
   z_drop(z_move(keyexpr));
   if (ret != Z_OK)
   {
@@ -282,15 +332,10 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
 {
   UNUSED(argc);
 
-  z_owned_session_t *session_p = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  zxp_session_resource_t *resource = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
   {
     return enif_make_badarg(env);
-  }
-
-  if (!z_internal_session_check(session_p))
-  {
-    return enif_make_tuple2(env, error_atom, closed_atom);
   }
 
   ErlNifBinary keyexpr_binary;
@@ -323,10 +368,21 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   z_owned_bytes_t payload;
   z_bytes_from_buf(&payload, payload_binary.data, payload_binary.size, NULL, NULL);
 
-  ret = z_put(z_loan(*session_p),
+  pthread_mutex_lock(&resource->mutex);
+  if (!z_internal_session_check(&resource->session))
+  {
+    pthread_mutex_unlock(&resource->mutex);
+    z_drop(z_move(payload));
+    z_drop(z_move(keyexpr));
+    zxp_session_put_options_drop(put_options);
+    return enif_make_tuple2(env, error_atom, closed_atom);
+  }
+
+  ret = z_put(z_loan(resource->session),
               z_loan(keyexpr),
               z_move(payload),
               zxp_session_put_options_loan(put_options));
+  pthread_mutex_unlock(&resource->mutex);
   z_drop(z_move(keyexpr));
   zxp_session_put_options_drop(put_options);
   if (ret != Z_OK)
@@ -341,15 +397,10 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
 {
   UNUSED(argc);
 
-  z_owned_session_t *session_p = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&session_p))
+  zxp_session_resource_t *resource = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
   {
     return enif_make_badarg(env);
-  }
-
-  if (!z_internal_session_check(session_p))
-  {
-    return enif_make_tuple2(env, error_atom, closed_atom);
   }
 
   ErlNifBinary selector;
@@ -399,7 +450,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     enif_free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return zxp_raise(env, __FILE__, __LINE__, "pthread_mutex_init/2 failed");
   }
 
   pthread_condattr_t attr;
@@ -409,7 +460,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     enif_free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return zxp_raise(env, __FILE__, __LINE__, "pthread_condattr_init/1 failed");
   }
 
   int condattr_result = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
@@ -422,7 +473,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     enif_free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return zxp_raise(env, __FILE__, __LINE__, "pthread_cond_init/2 failed");
   }
 
   context->env = enif_alloc_env();
@@ -454,12 +505,24 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   context->ref_count++;
   pthread_mutex_unlock(&context->mutex);
 
-  ret = z_get_with_parameters_substr(z_loan(*session_p),
+  pthread_mutex_lock(&resource->mutex);
+  if (!z_internal_session_check(&resource->session))
+  {
+    pthread_mutex_unlock(&resource->mutex);
+    z_drop(z_move(callback));
+    zxp_session_get_context_release(context);
+    z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
+    return enif_make_tuple2(env, error_atom, closed_atom);
+  }
+
+  ret = z_get_with_parameters_substr(z_loan(resource->session),
                                      z_loan(keyexpr),
                                      parameters,
                                      parameters_length,
                                      z_move(callback),
                                      zxp_session_get_options_loan(get_options));
+  pthread_mutex_unlock(&resource->mutex);
   z_drop(z_move(keyexpr));
   zxp_session_get_options_drop(get_options);
   if (ret != Z_OK)
