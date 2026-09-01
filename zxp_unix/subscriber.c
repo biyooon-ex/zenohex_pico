@@ -204,8 +204,31 @@ void zxp_subscriber_drop_cb(void *arg)
 static void zxp_subscriber_dtor(ErlNifEnv *env, void *obj)
 {
   UNUSED(env);
-  z_owned_subscriber_t *subscriber = obj;
-  z_drop(z_move(*subscriber));
+
+  zxp_subscriber_resource_t *resource = obj;
+  if (!resource->is_mutex_initialized)
+  {
+    return;
+  }
+
+  z_owned_subscriber_t subscriber;
+  z_internal_null(&subscriber);
+
+  pthread_mutex_lock(&resource->mutex);
+  {
+    if (z_internal_subscriber_check(&resource->subscriber))
+    {
+      z_take(&subscriber, z_move(resource->subscriber));
+      z_internal_null(&resource->subscriber);
+    }
+  }
+  pthread_mutex_unlock(&resource->mutex);
+
+  if (z_internal_subscriber_check(&subscriber))
+  {
+    z_drop(z_move(subscriber));
+  }
+  pthread_mutex_destroy(&resource->mutex);
 }
 
 static const ErlNifResourceTypeInit ZxpSubscriberResourceTypeInit = {
@@ -223,13 +246,29 @@ ERL_NIF_TERM zxp_subscriber_undeclare(ErlNifEnv *env, int argc, const ERL_NIF_TE
 {
   UNUSED(argc);
 
-  z_owned_subscriber_t *subscriber = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_subscriber_resource_type, (void **)&subscriber))
+  zxp_subscriber_resource_t *resource = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_subscriber_resource_type, (void **)&resource))
   {
     return enif_make_badarg(env);
   }
 
-  z_result_t ret = z_undeclare_subscriber(z_move(*subscriber));
+  z_owned_subscriber_t subscriber;
+  z_internal_null(&subscriber);
+
+  pthread_mutex_lock(&resource->mutex);
+  {
+    if (!z_internal_subscriber_check(&resource->subscriber))
+    {
+      pthread_mutex_unlock(&resource->mutex);
+      return enif_make_tuple2(env, error_atom, closed_atom);
+    }
+
+    z_take(&subscriber, z_move(resource->subscriber));
+    z_internal_null(&resource->subscriber);
+  }
+  pthread_mutex_unlock(&resource->mutex);
+
+  z_result_t ret = z_undeclare_subscriber(z_move(subscriber));
   if (ret != Z_OK)
   {
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);

@@ -1,7 +1,16 @@
 #include <erl_nif.h>
+#include <pthread.h>
+#include <stdbool.h>
 #include <zenoh-pico.h>
 
 typedef struct zxp_subscriber_context zxp_subscriber_context_t;
+
+typedef struct
+{
+  pthread_mutex_t mutex;
+  z_owned_subscriber_t subscriber;
+  bool is_mutex_initialized;
+} zxp_subscriber_resource_t;
 
 extern ErlNifResourceType *zxp_subscriber_resource_type;
 
