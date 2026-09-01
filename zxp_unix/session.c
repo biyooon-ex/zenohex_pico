@@ -234,7 +234,7 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
     if (!z_internal_session_check(&resource->session))
     {
       pthread_mutex_unlock(&resource->mutex);
-      return enif_make_tuple2(env, error_atom, closed_atom);
+      return enif_make_tuple2(env, error_atom, session_closed_atom);
     }
 
     z_take(&session, z_move(resource->session));
@@ -310,7 +310,7 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
       pthread_mutex_unlock(&resource->mutex);
       z_drop(z_move(callback));
       z_drop(z_move(keyexpr));
-      return enif_make_tuple2(env, error_atom, closed_atom);
+      return enif_make_tuple2(env, error_atom, session_closed_atom);
     }
 
     ret = z_declare_subscriber(
@@ -395,7 +395,7 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
       z_drop(z_move(payload));
       z_drop(z_move(keyexpr));
       zxp_session_put_options_drop(put_options);
-      return enif_make_tuple2(env, error_atom, closed_atom);
+      return enif_make_tuple2(env, error_atom, session_closed_atom);
     }
 
     ret = z_put(z_loan(resource->session),
@@ -537,7 +537,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
       zxp_session_get_context_release(context);
       z_drop(z_move(keyexpr));
       zxp_session_get_options_drop(get_options);
-      return enif_make_tuple2(env, error_atom, closed_atom);
+      return enif_make_tuple2(env, error_atom, session_closed_atom);
     }
 
     ret = z_get_with_parameters_substr(z_loan(resource->session),

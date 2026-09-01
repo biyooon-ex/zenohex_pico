@@ -56,7 +56,7 @@ defmodule ZenohexPico.NifTest do
       {:ok, session} = Nif.session_open(config)
 
       assert Nif.session_close(session) == :ok
-      assert Nif.session_close(session) == {:error, :closed}
+      assert Nif.session_close(session) == {:error, :session_closed}
 
       assert {:ok, reopened_session} = Nif.session_open(config)
       assert Nif.session_close(reopened_session) == :ok
@@ -87,10 +87,13 @@ defmodule ZenohexPico.NifTest do
       assert :ok = Nif.session_close(connect_session)
       assert :ok = Nif.session_close(listen_session)
 
-      assert {:error, :closed} = Nif.session_put(connect_session, "zenohex_pico/test", "payload")
-      assert {:error, :closed} = Nif.session_get(connect_session, "zenohex_pico/test", 100)
+      assert {:error, :session_closed} =
+               Nif.session_put(connect_session, "zenohex_pico/test", "payload")
 
-      assert {:error, :closed} =
+      assert {:error, :session_closed} =
+               Nif.session_get(connect_session, "zenohex_pico/test", 100)
+
+      assert {:error, :session_closed} =
                Nif.session_declare_subscriber(listen_session, "zenohex_pico/test", self())
     end
 

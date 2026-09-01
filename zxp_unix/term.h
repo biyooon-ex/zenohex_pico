@@ -7,7 +7,7 @@ extern ERL_NIF_TERM error_atom;
 extern ERL_NIF_TERM not_found_atom;
 extern ERL_NIF_TERM nil_atom;
 extern ERL_NIF_TERM timeout_atom;
-extern ERL_NIF_TERM closed_atom;
+extern ERL_NIF_TERM session_closed_atom;
 extern ERL_NIF_TERM struct_atom;
 extern ERL_NIF_TERM true_atom;
 extern ERL_NIF_TERM false_atom;

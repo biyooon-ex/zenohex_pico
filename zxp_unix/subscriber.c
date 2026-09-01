@@ -260,7 +260,7 @@ ERL_NIF_TERM zxp_subscriber_undeclare(ErlNifEnv *env, int argc, const ERL_NIF_TE
     if (!z_internal_subscriber_check(&resource->subscriber))
     {
       pthread_mutex_unlock(&resource->mutex);
-      return enif_make_tuple2(env, error_atom, closed_atom);
+      return enif_make_tuple2(env, error_atom, session_closed_atom);
     }
 
     z_take(&subscriber, z_move(resource->subscriber));
