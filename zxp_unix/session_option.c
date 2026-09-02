@@ -179,6 +179,10 @@ z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_opt
 static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                          zxp_session_get_options_t *get_options)
 {
+  // For embedded deployments, we determined that queries from the same Zenoh-Pico
+  // session on a device do not need to reach queryables on that device. We do not
+  // use a Zenoh-Pico library with Z_FEATURE_LOCAL_QUERYABLE enabled, so
+  // allowed_destination is not supported.
   z_get_options_t *options = &get_options->options;
   ERL_NIF_TERM head;
   ERL_NIF_TERM tail;
@@ -366,29 +370,6 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       {
         return false;
       }
-    }
-    else if (enif_is_identical(tuple[0], allowed_destination_atom))
-    {
-#if Z_FEATURE_LOCAL_QUERYABLE == 1
-      if (enif_is_identical(tuple[1], session_local_atom))
-      {
-        options->allowed_destination = Z_LOCALITY_SESSION_LOCAL;
-      }
-      else if (enif_is_identical(tuple[1], remote_atom))
-      {
-        options->allowed_destination = Z_LOCALITY_REMOTE;
-      }
-      else if (enif_is_identical(tuple[1], any_atom))
-      {
-        options->allowed_destination = Z_LOCALITY_ANY;
-      }
-      else
-      {
-        return false;
-      }
-#else
-      return false;
-#endif
     }
     else
     {

@@ -65,7 +65,6 @@ defmodule ZenohexPico.Nif do
   @type session_get_option ::
           {:accept_replies, :matching_query | :any}
           | {:attachment, binary()}
-          | {:allowed_destination, :session_local | :remote | :any}
           | {:congestion_control, :block | :drop}
           | {:consolidation, :auto | :none | :monotonic | :latest}
           | {:encoding, String.t()}
