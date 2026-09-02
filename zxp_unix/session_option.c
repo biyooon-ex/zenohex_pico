@@ -9,8 +9,8 @@
 // session_put_option
 //
 
-static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
-                                         zxp_session_put_options_t *put_options)
+bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
+                                  zxp_session_put_options_t *put_options, ERL_NIF_TERM *error)
 {
   z_put_options_t *options = &put_options->options;
   ERL_NIF_TERM head;
@@ -22,6 +22,7 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
     int arity;
     if (!enif_get_tuple(env, head, &arity, &tuple) || arity != 2)
     {
+      *error = enif_make_badarg(env);
       return false;
     }
 
@@ -30,13 +31,15 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       ErlNifBinary encoding_binary;
       if (!enif_inspect_binary(env, tuple[1], &encoding_binary))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
       z_encoding_drop(options->encoding);
-      if (z_encoding_from_substr(&put_options->encoding,
-                                 (const char *)encoding_binary.data,
-                                 encoding_binary.size) != Z_OK)
+      z_result_t ret = z_encoding_from_substr(
+          &put_options->encoding, (const char *)encoding_binary.data, encoding_binary.size);
+      if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
         return false;
       }
       options->encoding = z_move(put_options->encoding);
@@ -46,12 +49,15 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       ErlNifBinary attachment_binary;
       if (!enif_inspect_binary(env, tuple[1], &attachment_binary))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
       z_bytes_drop(options->attachment);
-      if (z_bytes_copy_from_buf(
-              &put_options->attachment, attachment_binary.data, attachment_binary.size) != Z_OK)
+      z_result_t ret = z_bytes_copy_from_buf(
+          &put_options->attachment, attachment_binary.data, attachment_binary.size);
+      if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
         return false;
       }
       options->attachment = z_move(put_options->attachment);
@@ -68,6 +74,7 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -103,6 +110,7 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -118,6 +126,7 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -127,37 +136,41 @@ static bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       if (!enif_inspect_binary(env, tuple[1], &timestamp_binary) ||
           !zxp_timestamp_from_binary(&timestamp_binary, &put_options->timestamp))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
       options->timestamp = &put_options->timestamp;
     }
     else
     {
+      *error = enif_make_badarg(env);
       return false;
     }
     term = tail;
   }
 
-  return enif_is_empty_list(env, term);
+  if (!enif_is_empty_list(env, term))
+  {
+    *error = enif_make_badarg(env);
+    return false;
+  }
+
+  return true;
 }
 
-zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term)
+bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put_options,
+                                 ERL_NIF_TERM *error)
 {
-  zxp_session_put_options_t *put_options = enif_alloc(sizeof(*put_options));
-  if (put_options == NULL)
+  *put_options = enif_alloc(sizeof(**put_options));
+  if (*put_options == NULL)
   {
-    return NULL;
+    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return false;
   }
 
-  z_put_options_default(&put_options->options);
-  put_options->timestamp = _z_timestamp_null();
-  if (!zxp_session_put_options_init(env, term, put_options))
-  {
-    zxp_session_put_options_drop(put_options);
-    return NULL;
-  }
-
-  return put_options;
+  z_put_options_default(&(*put_options)->options);
+  (*put_options)->timestamp = _z_timestamp_null();
+  return true;
 }
 
 void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
@@ -176,8 +189,8 @@ z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_opt
 // session_get_option
 //
 
-static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
-                                         zxp_session_get_options_t *get_options)
+bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
+                                  zxp_session_get_options_t *get_options, ERL_NIF_TERM *error)
 {
   // For embedded deployments, we determined that queries from the same Zenoh-Pico
   // session on a device do not need to reach queryables on that device. We do not
@@ -193,6 +206,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
     int arity;
     if (!enif_get_tuple(env, head, &arity, &tuple) || arity != 2)
     {
+      *error = enif_make_badarg(env);
       return false;
     }
 
@@ -201,12 +215,15 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       ErlNifBinary payload_binary;
       if (!enif_inspect_binary(env, tuple[1], &payload_binary))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
       z_bytes_drop(options->payload);
-      if (z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size) !=
-          Z_OK)
+      z_result_t ret =
+          z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size);
+      if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
         return false;
       }
       options->payload = z_move(get_options->payload);
@@ -216,13 +233,15 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       ErlNifBinary encoding_binary;
       if (!enif_inspect_binary(env, tuple[1], &encoding_binary))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
       z_encoding_drop(options->encoding);
-      if (z_encoding_from_substr(&get_options->encoding,
-                                 (const char *)encoding_binary.data,
-                                 encoding_binary.size) != Z_OK)
+      z_result_t ret = z_encoding_from_substr(
+          &get_options->encoding, (const char *)encoding_binary.data, encoding_binary.size);
+      if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
         return false;
       }
       options->encoding = z_move(get_options->encoding);
@@ -232,12 +251,15 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       ErlNifBinary attachment_binary;
       if (!enif_inspect_binary(env, tuple[1], &attachment_binary))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
       z_bytes_drop(options->attachment);
-      if (z_bytes_copy_from_buf(
-              &get_options->attachment, attachment_binary.data, attachment_binary.size) != Z_OK)
+      z_result_t ret = z_bytes_copy_from_buf(
+          &get_options->attachment, attachment_binary.data, attachment_binary.size);
+      if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
         return false;
       }
       options->attachment = z_move(get_options->attachment);
@@ -262,6 +284,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -277,6 +300,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -312,6 +336,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -327,6 +352,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -346,6 +372,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -361,6 +388,7 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       }
       else
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
@@ -368,35 +396,39 @@ static bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
     {
       if (!enif_get_uint64(env, tuple[1], &options->timeout_ms))
       {
+        *error = enif_make_badarg(env);
         return false;
       }
     }
     else
     {
+      *error = enif_make_badarg(env);
       return false;
     }
     term = tail;
   }
 
-  return enif_is_empty_list(env, term);
+  if (!enif_is_empty_list(env, term))
+  {
+    *error = enif_make_badarg(env);
+    return false;
+  }
+
+  return true;
 }
 
-zxp_session_get_options_t *zxp_session_get_options_new(ErlNifEnv *env, ERL_NIF_TERM term)
+bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get_options,
+                                 ERL_NIF_TERM *error)
 {
-  zxp_session_get_options_t *get_options = enif_alloc(sizeof(*get_options));
-  if (get_options == NULL)
+  *get_options = enif_alloc(sizeof(**get_options));
+  if (*get_options == NULL)
   {
-    return NULL;
+    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return false;
   }
 
-  z_get_options_default(&get_options->options);
-  if (!zxp_session_get_options_init(env, term, get_options))
-  {
-    zxp_session_get_options_drop(get_options);
-    return NULL;
-  }
-
-  return get_options;
+  z_get_options_default(&(*get_options)->options);
+  return true;
 }
 
 void zxp_session_get_options_drop(zxp_session_get_options_t *get_options)

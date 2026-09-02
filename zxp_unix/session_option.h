@@ -14,7 +14,11 @@ typedef struct
 } zxp_session_put_options_t;
 
 extern void zxp_session_put_options_drop(zxp_session_put_options_t *put_options);
-extern zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
+extern bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put_options,
+                                        ERL_NIF_TERM *error);
+extern bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
+                                         zxp_session_put_options_t *put_options,
+                                         ERL_NIF_TERM *error);
 extern z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_options);
 
 ////
@@ -30,5 +34,9 @@ typedef struct
 } zxp_session_get_options_t;
 
 extern void zxp_session_get_options_drop(zxp_session_get_options_t *get_options);
-extern zxp_session_get_options_t *zxp_session_get_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
+extern bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get_options,
+                                        ERL_NIF_TERM *error);
+extern bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
+                                         zxp_session_get_options_t *get_options,
+                                         ERL_NIF_TERM *error);
 extern z_get_options_t *zxp_session_get_options_loan(zxp_session_get_options_t *get_options);

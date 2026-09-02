@@ -369,10 +369,17 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
-  zxp_session_put_options_t *put_options = zxp_session_put_options_new(env, argv[3]);
-  if (put_options == NULL)
+  zxp_session_put_options_t *put_options;
+  ERL_NIF_TERM error_term;
+  if (!zxp_session_put_options_new(env, &put_options, &error_term))
   {
-    return enif_make_badarg(env);
+    return error_term;
+  }
+
+  if (!zxp_session_put_options_init(env, argv[3], put_options, &error_term))
+  {
+    zxp_session_put_options_drop(put_options);
+    return error_term;
   }
 
   z_owned_keyexpr_t keyexpr;
@@ -442,10 +449,16 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
-  zxp_session_get_options_t *get_options = zxp_session_get_options_new(env, argv[3]);
-  if (get_options == NULL)
+  zxp_session_get_options_t *get_options;
+  ERL_NIF_TERM error_term;
+  if (!zxp_session_get_options_new(env, &get_options, &error_term))
   {
-    return enif_make_badarg(env);
+    return error_term;
+  }
+  if (!zxp_session_get_options_init(env, argv[3], get_options, &error_term))
+  {
+    zxp_session_get_options_drop(get_options);
+    return error_term;
   }
 
   const uint8_t *query_separator = memchr(selector.data, '?', selector.size);
