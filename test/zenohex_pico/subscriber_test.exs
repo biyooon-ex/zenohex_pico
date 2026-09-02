@@ -3,10 +3,6 @@ defmodule ZenohexPico.SubscriberTest do
 
   alias ZenohexPico.{Config, Session, Subscriber}
 
-  @z_config_mode_key 0x40
-  @z_config_mode_peer "peer"
-  @z_config_listen_key 0x42
-
   test "undeclares subscribers declared with the calling process by default" do
     config = peer_config()
     assert {:ok, session} = Session.open(config)
@@ -19,8 +15,8 @@ defmodule ZenohexPico.SubscriberTest do
 
   defp peer_config do
     {:ok, config} = Config.default()
-    {:ok, config} = Config.insert(config, @z_config_mode_key, @z_config_mode_peer)
-    {:ok, config} = Config.insert(config, @z_config_listen_key, "tcp/0.0.0.0:7449")
+    {:ok, config} = Config.insert(config, :mode, "peer")
+    {:ok, config} = Config.insert(config, :listen, "tcp/0.0.0.0:7449")
     config
   end
 end

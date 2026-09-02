@@ -3,15 +3,20 @@ defmodule ZenohexPico.ConfigTest do
 
   alias ZenohexPico.Config
 
-  @z_config_mode_key 0x40
-  @z_config_mode_peer "peer"
-
   test "delegates configuration operations" do
     assert {:ok, config} = Config.default()
-    assert {:ok, "client"} = Config.get(config, @z_config_mode_key)
+    assert {:ok, "client"} = Config.get(config, :mode)
 
-    assert {:ok, updated_config} = Config.insert(config, @z_config_mode_key, @z_config_mode_peer)
-    assert {:ok, "client"} = Config.get(config, @z_config_mode_key)
-    assert {:ok, "peer"} = Config.get(updated_config, @z_config_mode_key)
+    assert {:ok, updated_config} = Config.insert(config, :mode, "peer")
+    assert {:ok, "client"} = Config.get(config, :mode)
+    assert {:ok, "peer"} = Config.get(updated_config, :mode)
+  end
+
+  test "rejects unsupported configuration keys" do
+    {:ok, config} = Config.default()
+
+    assert_raise ArgumentError, ~r/unsupported Zenoh Pico configuration key/, fn ->
+      Config.get(config, :unknown)
+    end
   end
 end
