@@ -181,7 +181,9 @@ defmodule ZenohexPico.NifTest do
 
       assert is_reference(subscriber)
 
-      :ok = Nif.session_put(connect_session, "zenohex_pico/test", "payload")
+      timestamp = "2025-07-16T01:34:56.871273403Z/208a2ec783ec4527a39cc1d5559c70e9"
+
+      :ok = Nif.session_put(connect_session, "zenohex_pico/test", "payload", timestamp: timestamp)
 
       assert_receive %ZenohexPico.Sample{
         attachment: "",
@@ -192,7 +194,7 @@ defmodule ZenohexPico.NifTest do
         kind: :put,
         payload: "payload",
         priority: :data,
-        timestamp: nil
+        timestamp: ^timestamp
       }
 
       assert :ok = Nif.subscriber_undeclare(subscriber)
