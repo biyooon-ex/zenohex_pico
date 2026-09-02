@@ -27,10 +27,61 @@ defmodule ZenohexPico.Nif do
   @spec session_open(reference()) :: {:ok, reference()} | {:error, reason :: term()}
   def session_open(_config), do: err()
 
-  @spec session_close(reference()) :: :ok | {:error, reason :: term()}
+  @spec session_close(reference()) :: :ok | {:error, :session_closed} | {:error, reason :: term()}
   def session_close(_session), do: err()
 
-  @spec session_get(reference(), String.t(), non_neg_integer(), keyword()) ::
+  @spec session_declare_subscriber(reference(), String.t(), pid(), []) ::
+          {:ok, reference()} | {:error, reason :: term()}
+  def session_declare_subscriber(_session, _key_expr, _pid, _opts \\ []), do: err()
+
+  @spec subscriber_undeclare(reference()) :: :ok | {:error, reason :: term()}
+  def subscriber_undeclare(_subscriber), do: err()
+
+  @type session_put_option ::
+          {:encoding, String.t()}
+          | {:attachment, binary()}
+          | {:congestion_control, :block | :drop}
+          | {:priority,
+             :real_time
+             | :interactive_high
+             | :interactive_low
+             | :data_high
+             | :data
+             | :data_low
+             | :background}
+          | {:express, boolean()}
+          | {:timestamp, String.t()}
+
+  @doc """
+  Publishes a payload with optional Zenoh metadata.
+
+  `:timestamp` must use Zenohex's UTC timestamp form:
+  `YYYY-MM-DDTHH:MM:SS.nnnnnnnnnZ/<32 lowercase hexadecimal digits>`.
+  """
+  @spec session_put(reference(), String.t(), binary(), [session_put_option()]) ::
+          :ok | {:error, reason :: term()}
+  def session_put(_session, _keyexpr, _payload, _opts \\ []), do: err()
+
+  @type session_get_option ::
+          {:accept_replies, :matching_query | :any}
+          | {:attachment, binary()}
+          | {:congestion_control, :block | :drop}
+          | {:consolidation, :auto | :none | :monotonic | :latest}
+          | {:encoding, String.t()}
+          | {:express, boolean()}
+          | {:payload, binary()}
+          | {:priority,
+             :real_time
+             | :interactive_high
+             | :interactive_low
+             | :data_high
+             | :data
+             | :data_low
+             | :background}
+          | {:target, :best_matching | :all | :all_complete}
+          | {:query_timeout, non_neg_integer()}
+
+  @spec session_get(reference(), String.t(), non_neg_integer(), [session_get_option()]) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
           | {:error, :timeout}
           | {:error, reason :: term()}

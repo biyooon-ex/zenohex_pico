@@ -3,6 +3,7 @@
 
 #include "helper/helper.h"
 #include "term.h"
+#include "timestamp.h"
 
 static ERL_NIF_TERM zxp_atom_from_zp_congestion_control(z_congestion_control_t congestion_control)
 {
@@ -142,7 +143,7 @@ ERL_NIF_TERM zxp_struct_from_zp_sample(ErlNifEnv *env, const z_loaned_sample_t *
       zxp_atom_from_zp_sample_kind(z_sample_kind(sample)),
       zxp_binary_from_zp_bytes(env, z_sample_payload(sample)),
       zxp_atom_from_zp_priority(z_sample_priority(sample)),
-      nil_atom,
+      zxp_binary_from_zp_timestamp(env, z_sample_timestamp(sample)),
   };
 
   for (size_t index = 0; index < 10; index++)
