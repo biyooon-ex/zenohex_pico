@@ -116,10 +116,17 @@ defmodule ZenohexPico.NifTest do
       listen_session: _listen_session,
       connect_session: connect_session
     } do
-      assert_raise ArgumentError, fn ->
-        Nif.session_put(connect_session, "zenohex_pico/test", "payload",
-          timestamp: "2025-07-16T01:34:56Z/not-a-zenoh-id"
-        )
+      malformed_timestamps = [
+        "2025-07-16T01:34:56Z/208a2ec783ec4527a39cc1d5559c70e9",
+        "2025-07-16T01:34:56.1Z/208a2ec783ec4527a39cc1d5559c70e9",
+        "2025-07-16T01:34:56.871273403Z/208A2EC783EC4527A39CC1D5559C70E9",
+        "2025-07-16T01:34:56Z/not-a-zenoh-id"
+      ]
+
+      for timestamp <- malformed_timestamps do
+        assert_raise ArgumentError, fn ->
+          Nif.session_put(connect_session, "zenohex_pico/test", "payload", timestamp: timestamp)
+        end
       end
     end
 

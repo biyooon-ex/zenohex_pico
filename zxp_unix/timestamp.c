@@ -22,10 +22,6 @@ static int zxp_hex_digit(uint8_t value)
   {
     return value - 'a' + 10;
   }
-  if (value >= 'A' && value <= 'F')
-  {
-    return value - 'A' + 10;
-  }
   return -1;
 }
 
@@ -91,8 +87,8 @@ bool zxp_timestamp_from_binary(const ErlNifBinary *binary, z_timestamp_t *timest
 {
   const uint8_t *data = binary->data;
   size_t length = binary->size;
-  if (length < 53 || data[4] != '-' || data[7] != '-' || data[10] != 'T' || data[13] != ':' ||
-      data[16] != ':')
+  if (length != 63 || data[4] != '-' || data[7] != '-' || data[10] != 'T' || data[13] != ':' ||
+      data[16] != ':' || data[19] != '.' || data[29] != 'Z' || data[30] != '/')
   {
     return false;
   }
@@ -112,32 +108,8 @@ bool zxp_timestamp_from_binary(const ErlNifBinary *binary, z_timestamp_t *timest
     return false;
   }
 
-  size_t index = 19;
   uint32_t nanos = 0;
-  if (index < length && data[index] == '.')
-  {
-    index++;
-    size_t fraction_start = index;
-    while (index < length && zxp_decimal_digit(data[index]) >= 0)
-    {
-      if (index - fraction_start == 9)
-      {
-        return false;
-      }
-      nanos = nanos * 10 + (uint32_t)zxp_decimal_digit(data[index]);
-      index++;
-    }
-    if (index == fraction_start)
-    {
-      return false;
-    }
-    for (size_t fraction_length = index - fraction_start; fraction_length < 9; fraction_length++)
-    {
-      nanos *= 10;
-    }
-  }
-
-  if (index + 34 != length || data[index] != 'Z' || data[index + 1] != '/')
+  if (!zxp_parse_decimal(data + 20, 9, &nanos))
   {
     return false;
   }
@@ -145,8 +117,8 @@ bool zxp_timestamp_from_binary(const ErlNifBinary *binary, z_timestamp_t *timest
   _z_id_t id = _z_id_empty();
   for (size_t id_index = 0; id_index < ZENOH_ID_SIZE; id_index++)
   {
-    int high = zxp_hex_digit(data[index + 2 + id_index * 2]);
-    int low = zxp_hex_digit(data[index + 3 + id_index * 2]);
+    int high = zxp_hex_digit(data[31 + id_index * 2]);
+    int low = zxp_hex_digit(data[32 + id_index * 2]);
     if (high < 0 || low < 0)
     {
       return false;
