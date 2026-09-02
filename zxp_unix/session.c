@@ -385,7 +385,13 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
 
   z_owned_bytes_t payload;
-  z_bytes_from_buf(&payload, payload_binary.data, payload_binary.size, NULL, NULL);
+  ret = z_bytes_copy_from_buf(&payload, payload_binary.data, payload_binary.size);
+  if (ret != Z_OK)
+  {
+    z_drop(z_move(keyexpr));
+    zxp_session_put_options_drop(put_options);
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
 
   pthread_mutex_lock(&resource->mutex);
   {
