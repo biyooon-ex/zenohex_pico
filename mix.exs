@@ -36,7 +36,10 @@ defmodule ZenohexPico.MixProject do
   defp project(_) do
     [
       deps: [
-        {:elixir_make, "~> 0.4", runtime: false}
+        {:elixir_make, "~> 0.4", runtime: false},
+        {:mix_test_watch, "~> 1.2", only: [:dev, :test], runtime: false},
+        {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+        {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
       ],
       compilers: [:elixir_make] ++ Mix.compilers(),
       make_cwd: "zxp_unix",
@@ -51,6 +54,10 @@ defmodule ZenohexPico.MixProject do
           end,
           "format"
         ]
+      ],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/project.plt"},
+        plt_core_path: "priv/plts/core.plt"
       ]
     ]
   end

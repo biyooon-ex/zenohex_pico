@@ -31,3 +31,7 @@ zenohex_pico-*.tar
 
 # Visula Studio Code
 .vscode/
+
+# Ignore local Dialyzer PLTs
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
