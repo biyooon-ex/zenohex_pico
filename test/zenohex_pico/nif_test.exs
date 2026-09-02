@@ -196,7 +196,7 @@ defmodule ZenohexPico.NifTest do
       }
 
       assert :ok = Nif.subscriber_undeclare(subscriber)
-      assert {:error, _reason} = Nif.subscriber_undeclare(subscriber)
+      assert {:error, :subscriber_undeclared} = Nif.subscriber_undeclare(subscriber)
     end
 
     test "session_declare_subscriber/4 rejects unsupported options", %{

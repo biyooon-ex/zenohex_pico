@@ -11,6 +11,7 @@ ERL_NIF_TERM not_found_atom;
 ERL_NIF_TERM nil_atom;
 ERL_NIF_TERM timeout_atom;
 ERL_NIF_TERM session_closed_atom;
+ERL_NIF_TERM subscriber_undeclared_atom;
 ERL_NIF_TERM struct_atom;
 ERL_NIF_TERM true_atom;
 ERL_NIF_TERM false_atom;
@@ -111,6 +112,7 @@ void zxp_init_atom(ErlNifEnv *env)
   nil_atom = enif_make_atom(env, "nil");
   timeout_atom = enif_make_atom(env, "timeout");
   session_closed_atom = enif_make_atom(env, "session_closed");
+  subscriber_undeclared_atom = enif_make_atom(env, "subscriber_undeclared");
   struct_atom = enif_make_atom(env, "__struct__");
   true_atom = enif_make_atom(env, "true");
   false_atom = enif_make_atom(env, "false");
