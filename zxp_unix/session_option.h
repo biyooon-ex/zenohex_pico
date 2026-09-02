@@ -1,6 +1,10 @@
 #include <erl_nif.h>
 #include <zenoh-pico.h>
 
+////
+// session_put_option
+//
+
 typedef struct
 {
   z_put_options_t options;
@@ -12,6 +16,10 @@ typedef struct
 extern void zxp_session_put_options_drop(zxp_session_put_options_t *put_options);
 extern zxp_session_put_options_t *zxp_session_put_options_new(ErlNifEnv *env, ERL_NIF_TERM term);
 extern z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_options);
+
+////
+// session_get_option
+//
 
 typedef struct
 {
