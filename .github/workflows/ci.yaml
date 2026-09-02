@@ -1,4 +1,4 @@
-name: Test
+name: CI
 
 env:
   MIX_ENV: test
@@ -67,3 +67,19 @@ jobs:
 
       - name: Run tests
         run: mix test --warnings-as-errors
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Run Credo
+        run: mix credo
+
+      - name: Cache Dialyzer PLTs
+        id: dialyzer-plt-cache
+        uses: actions/cache@v6
+        with:
+          path: priv/plts
+          key: dialyzer-plts-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('mix.exs', 'mix.lock') }}
+
+      - name: Run Dialyzer
+        run: mix dialyzer
