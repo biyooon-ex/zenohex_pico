@@ -2,9 +2,7 @@ defmodule ZenohexPico.Config do
   @moduledoc """
   Functions for creating and updating Zenoh Pico configurations.
 
-  Configurations are opaque native references. Unlike `Zenohex.Config`, Pico
-  configurations use a fixed set of Zenoh Pico configuration keys rather than
-  JSON paths.
+  Configurations are opaque native references.
   """
 
   @keys %{
