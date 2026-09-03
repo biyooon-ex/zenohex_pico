@@ -114,7 +114,7 @@ defmodule ZenohexPico.Session do
   @doc """
   Closes a session.
 
-  After calling this function, the `session` must not be used for session.
+  After calling this function, the `session` must not be used again.
 
   ## Parameters
 
