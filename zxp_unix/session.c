@@ -107,16 +107,38 @@ static void zxp_session_get_drop_cb(void *arg)
   zxp_session_get_context_release(context);
 }
 
-static void zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
+static bool zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
 {
-  clock_gettime(CLOCK_MONOTONIC, deadline);
-  deadline->tv_sec += (time_t)(timeout_ms / 1000);
-  deadline->tv_nsec += (long)((timeout_ms % 1000) * 1000000);
-  if (deadline->tv_nsec >= 1000000000L)
+  if (clock_gettime(CLOCK_MONOTONIC, deadline) != 0 || deadline->tv_sec < 0)
   {
-    deadline->tv_sec++;
-    deadline->tv_nsec -= 1000000000L;
+    return false;
   }
+
+  uint64_t timeout_seconds = timeout_ms / 1000;
+  long deadline_nanoseconds = deadline->tv_nsec + (long)((timeout_ms % 1000) * 1000000);
+  if (deadline_nanoseconds >= 1000000000L)
+  {
+    timeout_seconds++;
+    deadline_nanoseconds -= 1000000000L;
+  }
+
+  uint64_t current_seconds = (uint64_t)deadline->tv_sec;
+  if ((time_t)current_seconds != deadline->tv_sec ||
+      timeout_seconds > UINT64_MAX - current_seconds)
+  {
+    return false;
+  }
+
+  uint64_t deadline_seconds = current_seconds + timeout_seconds;
+  time_t converted_deadline_seconds = (time_t)deadline_seconds;
+  if ((uint64_t)converted_deadline_seconds != deadline_seconds)
+  {
+    return false;
+  }
+
+  deadline->tv_sec = converted_deadline_seconds;
+  deadline->tv_nsec = deadline_nanoseconds;
+  return true;
 }
 
 static void zxp_session_dtor(ErlNifEnv *env, void *obj)
@@ -450,6 +472,12 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
+  struct timespec deadline;
+  if (!zxp_session_get_deadline(timeout_ms, &deadline))
+  {
+    return zxp_raise(env, __FILE__, __LINE__, "failed to calculate session get deadline");
+  }
+
   zxp_session_get_options_t *get_options;
   ERL_NIF_TERM error_term;
   if (!zxp_session_get_options_new(env, &get_options, &error_term))
@@ -581,9 +609,6 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     zxp_session_get_context_release(context);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
-
-  struct timespec deadline;
-  zxp_session_get_deadline(timeout_ms, &deadline);
 
   ERL_NIF_TERM replies;
   pthread_mutex_lock(&context->mutex);
