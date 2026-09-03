@@ -6,7 +6,9 @@ ZENOH_PICO_CFLAGS = -I$(ZENOH_PICO_DIR)/include -I$(ZENOH_PICO_BUILD_DIR)/includ
 ZENOH_PICO_LDFLAGS = -lpthread
 
 CC ?= cc
-CFLAGS ?= -O2 -fPIC -Wall -Wextra -Werror
+CFLAGS ?= -O2 -fPIC -Wall -Wextra -Werror \
+	-Wconversion -Wsign-conversion -Wformat=2 -Wshadow -Wstrict-prototypes \
+	-D_FORTIFY_SOURCE=2 -fstack-protector-strong
 LDFLAGS ?= -shared
 
 ERL_CFLAGS  ?= -I$(ERTS_INCLUDE_DIR) -I$(ERL_EI_INCLUDE_DIR)

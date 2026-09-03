@@ -35,6 +35,14 @@ defmodule ZenohexPico.NifTest do
       assert {:ok, @z_config_mode_client} = Nif.config_get(config, @z_config_mode_key)
       assert {:ok, @z_config_mode_peer} = Nif.config_get(updated_config, @z_config_mode_key)
     end
+
+    test "config_insert/3 rejects values containing NUL" do
+      {:ok, config} = Nif.config_default()
+
+      assert_raise ArgumentError, fn ->
+        Nif.config_insert(config, @z_config_mode_key, "peer\0ignored")
+      end
+    end
   end
 
   describe "session open/close" do

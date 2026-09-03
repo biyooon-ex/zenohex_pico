@@ -79,7 +79,7 @@ static void zxp_civil_from_days(int64_t days, uint32_t *year, uint32_t *month, u
   uint32_t month_prime = (5 * day_of_year + 2) / 153;
 
   *day = day_of_year - (153 * month_prime + 2) / 5 + 1;
-  *month = month_prime + (month_prime < 10 ? 3 : -9);
+  *month = month_prime < 10 ? month_prime + 3 : month_prime - 9;
   *year = (uint32_t)(calculated_year + (*month <= 2));
 }
 

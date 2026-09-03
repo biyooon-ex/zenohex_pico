@@ -107,16 +107,38 @@ static void zxp_session_get_drop_cb(void *arg)
   zxp_session_get_context_release(context);
 }
 
-static void zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
+static bool zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
 {
-  clock_gettime(CLOCK_MONOTONIC, deadline);
-  deadline->tv_sec += (time_t)(timeout_ms / 1000);
-  deadline->tv_nsec += (long)((timeout_ms % 1000) * 1000000);
-  if (deadline->tv_nsec >= 1000000000L)
+  if (clock_gettime(CLOCK_MONOTONIC, deadline) != 0 || deadline->tv_sec < 0)
   {
-    deadline->tv_sec++;
-    deadline->tv_nsec -= 1000000000L;
+    return false;
   }
+
+  uint64_t timeout_seconds = timeout_ms / 1000;
+  long deadline_nanoseconds = deadline->tv_nsec + (long)((timeout_ms % 1000) * 1000000);
+  if (deadline_nanoseconds >= 1000000000L)
+  {
+    timeout_seconds++;
+    deadline_nanoseconds -= 1000000000L;
+  }
+
+  uint64_t current_seconds = (uint64_t)deadline->tv_sec;
+  if ((time_t)current_seconds != deadline->tv_sec ||
+      timeout_seconds > UINT64_MAX - current_seconds)
+  {
+    return false;
+  }
+
+  uint64_t deadline_seconds = current_seconds + timeout_seconds;
+  time_t converted_deadline_seconds = (time_t)deadline_seconds;
+  if ((uint64_t)converted_deadline_seconds != deadline_seconds)
+  {
+    return false;
+  }
+
+  deadline->tv_sec = converted_deadline_seconds;
+  deadline->tv_nsec = deadline_nanoseconds;
+  return true;
 }
 
 static void zxp_session_dtor(ErlNifEnv *env, void *obj)
@@ -137,7 +159,6 @@ static void zxp_session_dtor(ErlNifEnv *env, void *obj)
     if (z_internal_session_check(&resource->session))
     {
       z_take(&session, z_move(resource->session));
-      z_internal_null(&resource->session);
     }
   }
   pthread_mutex_unlock(&resource->mutex);
@@ -154,10 +175,11 @@ static const ErlNifResourceTypeInit ZxpSessionResourceTypeInit = {
     .members = 1,
 };
 
-void zxp_session_enif_init_resource_type(ErlNifEnv *env)
+bool zxp_session_enif_init_resource_type(ErlNifEnv *env)
 {
   zxp_session_resource_type = enif_init_resource_type(
       env, "zxp_session", &ZxpSessionResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+  return zxp_session_resource_type != NULL;
 }
 
 ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
@@ -171,6 +193,7 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
   }
 
   z_owned_config_t config;
+  z_internal_null(&config);
   {
     z_result_t ret = z_clone(&config, z_loan(*config_p));
 
@@ -181,6 +204,7 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
   }
 
   z_owned_session_t session;
+  z_internal_null(&session);
   {
     z_result_t ret = z_open(&session, z_move(config), NULL);
 
@@ -238,7 +262,6 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
     }
 
     z_take(&session, z_move(resource->session));
-    z_internal_null(&resource->session);
   }
   pthread_mutex_unlock(&resource->mutex);
 
@@ -278,6 +301,7 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
   }
 
   z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
   z_result_t ret =
       z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
   if (ret != Z_OK)
@@ -293,6 +317,7 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
   }
 
   z_owned_closure_sample_t callback;
+  z_internal_null(&callback);
   ret = z_closure_sample(&callback, zxp_subscriber_sample_cb, zxp_subscriber_drop_cb, context);
   if (ret != Z_OK)
   {
@@ -383,6 +408,7 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
 
   z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
   z_result_t ret =
       z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
   if (ret != Z_OK)
@@ -392,6 +418,7 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
 
   z_owned_bytes_t payload;
+  z_internal_null(&payload);
   ret = z_bytes_copy_from_buf(&payload, payload_binary.data, payload_binary.size);
   if (ret != Z_OK)
   {
@@ -461,12 +488,19 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return error_term;
   }
 
+  // Do not let Zenoh retain the query context after this NIF has stopped waiting for replies.
+  if (get_options->options.timeout_ms > timeout_ms)
+  {
+    get_options->options.timeout_ms = timeout_ms;
+  }
+
   const uint8_t *query_separator = memchr(selector.data, '?', selector.size);
   size_t keyexpr_length =
       query_separator == NULL ? selector.size : (size_t)(query_separator - selector.data);
   size_t parameters_length = query_separator == NULL ? 0 : selector.size - keyexpr_length - 1;
 
   z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
   z_result_t ret = z_keyexpr_from_substr(&keyexpr, (const char *)selector.data, keyexpr_length);
   if (ret != Z_OK)
   {
@@ -532,6 +566,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   context->ref_count = 1;
 
   z_owned_closure_reply_t callback;
+  z_internal_null(&callback);
   ret = z_closure_reply(&callback, zxp_session_get_reply_cb, zxp_session_get_drop_cb, context);
   if (ret != Z_OK)
   {
@@ -547,6 +582,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
   pthread_mutex_unlock(&context->mutex);
 
+  struct timespec deadline;
   pthread_mutex_lock(&resource->mutex);
   {
     if (!z_internal_session_check(&resource->session))
@@ -557,6 +593,17 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
       z_drop(z_move(keyexpr));
       zxp_session_get_options_drop(get_options);
       return enif_make_tuple2(env, error_atom, session_closed_atom);
+    }
+    // Start the reply-wait timeout after option parsing, allocation, and session-lock acquisition.
+    // Calculate it before issuing the query so a clock failure cannot leave a query running.
+    if (!zxp_session_get_deadline(timeout_ms, &deadline))
+    {
+      pthread_mutex_unlock(&resource->mutex);
+      z_drop(z_move(callback));
+      zxp_session_get_context_release(context);
+      z_drop(z_move(keyexpr));
+      zxp_session_get_options_drop(get_options);
+      return zxp_raise(env, __FILE__, __LINE__, "failed to calculate session get deadline");
     }
 
     ret = z_get_with_parameters_substr(z_loan(resource->session),
@@ -574,9 +621,6 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     zxp_session_get_context_release(context);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
-
-  struct timespec deadline;
-  zxp_session_get_deadline(timeout_ms, &deadline);
 
   ERL_NIF_TERM replies;
   pthread_mutex_lock(&context->mutex);
