@@ -90,7 +90,6 @@ ERL_NIF_TERM zxp_config_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
   memcpy(bin.data, value, len);
   ERL_NIF_TERM binary = enif_make_binary(env, &bin);
-  enif_release_binary(&bin);
 
   return enif_make_tuple2(env, ok_atom, binary);
 }
