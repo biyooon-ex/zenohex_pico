@@ -157,7 +157,7 @@ ERL_NIF_TERM zxp_config_insert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
   }
 
   {
-    z_result_t ret = zp_config_insert(z_loan_mut(*new_config_p), key, value);
+    z_result_t ret = zp_config_insert(z_loan_mut(*new_config_p), (uint8_t)key, value);
     enif_free(value);
     if (ret != Z_OK)
     {

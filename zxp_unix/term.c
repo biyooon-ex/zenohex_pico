@@ -80,22 +80,22 @@ static ERL_NIF_TERM zxp_error_binary(ErlNifEnv *env, const char *file, int line,
   {
     return enif_make_tuple2(env, error_atom, enif_make_atom(env, "snprintf_failed"));
   }
-  char *msg = enif_alloc(len + 1);
+  char *msg = enif_alloc((size_t)len + 1);
   if (msg == NULL)
   {
     return enif_make_tuple2(env, error_atom, enif_make_atom(env, "enif_alloc_failed"));
   }
 
-  snprintf(msg, len + 1, "%s at %s:%d", reason, file, line);
+  snprintf(msg, (size_t)len + 1, "%s at %s:%d", reason, file, line);
 
   ErlNifBinary bin;
-  if (!enif_alloc_binary(len, &bin))
+  if (!enif_alloc_binary((size_t)len, &bin))
   {
     enif_free(msg);
     return enif_make_tuple2(env, error_atom, enif_make_atom(env, "enif_alloc_binary_failed"));
   }
 
-  memcpy(bin.data, msg, len);
+  memcpy(bin.data, msg, (size_t)len);
   enif_free(msg);
 
   return enif_make_binary(env, &bin);
