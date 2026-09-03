@@ -36,6 +36,7 @@ defmodule ZenohexPico.MixProject do
   defp project(_) do
     [
       deps: [
+        {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
         {:elixir_make, "~> 0.4", runtime: false},
         {:mix_test_watch, "~> 1.2", only: [:dev, :test], runtime: false},
         {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -58,6 +59,10 @@ defmodule ZenohexPico.MixProject do
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/project.plt"},
         plt_core_path: "priv/plts/core.plt"
+      ],
+      docs: [
+        extras: ["README.md", "LICENSE"],
+        main: "readme"
       ]
     ]
   end
