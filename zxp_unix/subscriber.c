@@ -238,10 +238,11 @@ static const ErlNifResourceTypeInit ZxpSubscriberResourceTypeInit = {
     .members = 1,
 };
 
-void zxp_subscriber_enif_init_resource_type(ErlNifEnv *env)
+bool zxp_subscriber_enif_init_resource_type(ErlNifEnv *env)
 {
   zxp_subscriber_resource_type = enif_init_resource_type(
       env, "zxp_subscriber", &ZxpSubscriberResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+  return zxp_subscriber_resource_type != NULL;
 }
 
 ERL_NIF_TERM zxp_subscriber_undeclare(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])

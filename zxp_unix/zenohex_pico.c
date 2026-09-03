@@ -13,9 +13,11 @@ static int load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
   UNUSED(info);
 
   zxp_init_atom(env);
-  zxp_config_enif_init_resource_type(env);
-  zxp_session_enif_init_resource_type(env);
-  zxp_subscriber_enif_init_resource_type(env);
+  if (!zxp_config_enif_init_resource_type(env) || !zxp_session_enif_init_resource_type(env) ||
+      !zxp_subscriber_enif_init_resource_type(env))
+  {
+    return 1;
+  }
   return 0;
 }
 

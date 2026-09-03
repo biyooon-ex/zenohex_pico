@@ -154,10 +154,11 @@ static const ErlNifResourceTypeInit ZxpSessionResourceTypeInit = {
     .members = 1,
 };
 
-void zxp_session_enif_init_resource_type(ErlNifEnv *env)
+bool zxp_session_enif_init_resource_type(ErlNifEnv *env)
 {
   zxp_session_resource_type = enif_init_resource_type(
       env, "zxp_session", &ZxpSessionResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+  return zxp_session_resource_type != NULL;
 }
 
 ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])

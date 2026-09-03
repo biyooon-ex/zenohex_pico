@@ -1,4 +1,5 @@
 #include <erl_nif.h>
+#include <stdbool.h>
 #include <zenoh-pico.h>
 
 #include "macro.h"
@@ -19,10 +20,11 @@ static const ErlNifResourceTypeInit ZxpConfigResourceTypeInit = {
     .members = 1,
 };
 
-void zxp_config_enif_init_resource_type(ErlNifEnv *env)
+bool zxp_config_enif_init_resource_type(ErlNifEnv *env)
 {
   zxp_config_resource_type = enif_init_resource_type(
       env, "zxp_config", &ZxpConfigResourceTypeInit, ERL_NIF_RT_CREATE, NULL);
+  return zxp_config_resource_type != NULL;
 }
 
 ERL_NIF_TERM zxp_config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
