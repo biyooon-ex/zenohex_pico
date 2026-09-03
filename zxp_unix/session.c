@@ -159,7 +159,6 @@ static void zxp_session_dtor(ErlNifEnv *env, void *obj)
     if (z_internal_session_check(&resource->session))
     {
       z_take(&session, z_move(resource->session));
-      z_internal_null(&resource->session);
     }
   }
   pthread_mutex_unlock(&resource->mutex);
@@ -194,6 +193,7 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
   }
 
   z_owned_config_t config;
+  z_internal_null(&config);
   {
     z_result_t ret = z_clone(&config, z_loan(*config_p));
 
@@ -204,6 +204,7 @@ ERL_NIF_TERM zxp_session_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[
   }
 
   z_owned_session_t session;
+  z_internal_null(&session);
   {
     z_result_t ret = z_open(&session, z_move(config), NULL);
 
@@ -261,7 +262,6 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
     }
 
     z_take(&session, z_move(resource->session));
-    z_internal_null(&resource->session);
   }
   pthread_mutex_unlock(&resource->mutex);
 
@@ -301,6 +301,7 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
   }
 
   z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
   z_result_t ret =
       z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
   if (ret != Z_OK)
@@ -316,6 +317,7 @@ ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_
   }
 
   z_owned_closure_sample_t callback;
+  z_internal_null(&callback);
   ret = z_closure_sample(&callback, zxp_subscriber_sample_cb, zxp_subscriber_drop_cb, context);
   if (ret != Z_OK)
   {
@@ -406,6 +408,7 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
 
   z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
   z_result_t ret =
       z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
   if (ret != Z_OK)
@@ -415,6 +418,7 @@ ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
 
   z_owned_bytes_t payload;
+  z_internal_null(&payload);
   ret = z_bytes_copy_from_buf(&payload, payload_binary.data, payload_binary.size);
   if (ret != Z_OK)
   {
@@ -502,6 +506,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   size_t parameters_length = query_separator == NULL ? 0 : selector.size - keyexpr_length - 1;
 
   z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
   z_result_t ret = z_keyexpr_from_substr(&keyexpr, (const char *)selector.data, keyexpr_length);
   if (ret != Z_OK)
   {
@@ -567,6 +572,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   context->ref_count = 1;
 
   z_owned_closure_reply_t callback;
+  z_internal_null(&callback);
   ret = z_closure_reply(&callback, zxp_session_get_reply_cb, zxp_session_get_drop_cb, context);
   if (ret != Z_OK)
   {

@@ -67,6 +67,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_byte
   }
 
   z_owned_slice_t slice;
+  z_internal_null(&slice);
   ERL_NIF_TERM term;
   {
     z_result_t ret = z_bytes_to_slice(bytes, &slice);
@@ -102,6 +103,7 @@ static ERL_NIF_TERM zxp_binary_from_zp_keyexpr(ErlNifEnv *env, const z_loaned_ke
 static ERL_NIF_TERM zxp_binary_from_zp_encoding(ErlNifEnv *env, const z_loaned_encoding_t *encoding)
 {
   z_owned_string_t string;
+  z_internal_null(&string);
   ERL_NIF_TERM term;
   {
     z_result_t ret = z_encoding_to_string(encoding, &string);

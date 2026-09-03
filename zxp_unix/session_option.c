@@ -168,6 +168,8 @@ bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put
     return false;
   }
 
+  z_internal_null(&(*put_options)->encoding);
+  z_internal_null(&(*put_options)->attachment);
   z_put_options_default(&(*put_options)->options);
   (*put_options)->timestamp = _z_timestamp_null();
   return true;
@@ -427,6 +429,9 @@ bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get
     return false;
   }
 
+  z_internal_null(&(*get_options)->payload);
+  z_internal_null(&(*get_options)->encoding);
+  z_internal_null(&(*get_options)->attachment);
   z_get_options_default(&(*get_options)->options);
   return true;
 }

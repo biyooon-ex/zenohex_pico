@@ -33,6 +33,7 @@ ERL_NIF_TERM zxp_config_default(ErlNifEnv *env, int argc, const ERL_NIF_TERM arg
   UNUSED(argv);
 
   z_owned_config_t config;
+  z_internal_null(&config);
   z_result_t ret = z_config_default(&config);
 
   if (ret != Z_OK)

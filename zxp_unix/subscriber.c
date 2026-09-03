@@ -221,7 +221,6 @@ static void zxp_subscriber_dtor(ErlNifEnv *env, void *obj)
     if (z_internal_subscriber_check(&resource->subscriber))
     {
       z_take(&subscriber, z_move(resource->subscriber));
-      z_internal_null(&resource->subscriber);
     }
   }
   pthread_mutex_unlock(&resource->mutex);
@@ -267,7 +266,6 @@ ERL_NIF_TERM zxp_subscriber_undeclare(ErlNifEnv *env, int argc, const ERL_NIF_TE
     }
 
     z_take(&subscriber, z_move(resource->subscriber));
-    z_internal_null(&resource->subscriber);
   }
   pthread_mutex_unlock(&resource->mutex);
 
