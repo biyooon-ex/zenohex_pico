@@ -461,6 +461,12 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return error_term;
   }
 
+  // Do not let Zenoh retain the query context after this NIF has stopped waiting for replies.
+  if (get_options->options.timeout_ms > timeout_ms)
+  {
+    get_options->options.timeout_ms = timeout_ms;
+  }
+
   const uint8_t *query_separator = memchr(selector.data, '?', selector.size);
   size_t keyexpr_length =
       query_separator == NULL ? selector.size : (size_t)(query_separator - selector.data);
