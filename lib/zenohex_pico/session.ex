@@ -161,7 +161,7 @@ defmodule ZenohexPico.Session do
 
       iex> {:ok, config} = ZenohexPico.Config.default()
       iex> {:ok, session} = ZenohexPico.Session.open(config)
-      iex> ZenohexPico.Session.get(session, "key/expr")
+      iex> ZenohexPico.Session.get(session, "key/expr", 100)
       {:ok, [%ZenohexPico.Sample{}]}
   """
   @spec get(t(), String.t(), non_neg_integer(), get_opts()) ::
