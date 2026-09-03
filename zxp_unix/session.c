@@ -476,12 +476,6 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return enif_make_badarg(env);
   }
 
-  struct timespec deadline;
-  if (!zxp_session_get_deadline(timeout_ms, &deadline))
-  {
-    return zxp_raise(env, __FILE__, __LINE__, "failed to calculate session get deadline");
-  }
-
   zxp_session_get_options_t *get_options;
   ERL_NIF_TERM error_term;
   if (!zxp_session_get_options_new(env, &get_options, &error_term))
@@ -588,6 +582,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
   pthread_mutex_unlock(&context->mutex);
 
+  struct timespec deadline;
   pthread_mutex_lock(&resource->mutex);
   {
     if (!z_internal_session_check(&resource->session))
@@ -598,6 +593,17 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
       z_drop(z_move(keyexpr));
       zxp_session_get_options_drop(get_options);
       return enif_make_tuple2(env, error_atom, session_closed_atom);
+    }
+    // Start the reply-wait timeout after option parsing, allocation, and session-lock acquisition.
+    // Calculate it before issuing the query so a clock failure cannot leave a query running.
+    if (!zxp_session_get_deadline(timeout_ms, &deadline))
+    {
+      pthread_mutex_unlock(&resource->mutex);
+      z_drop(z_move(callback));
+      zxp_session_get_context_release(context);
+      z_drop(z_move(keyexpr));
+      zxp_session_get_options_drop(get_options);
+      return zxp_raise(env, __FILE__, __LINE__, "failed to calculate session get deadline");
     }
 
     ret = z_get_with_parameters_substr(z_loan(resource->session),
