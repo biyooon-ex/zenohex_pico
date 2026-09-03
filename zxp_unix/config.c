@@ -122,6 +122,10 @@ ERL_NIF_TERM zxp_config_insert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
   {
     return enif_make_badarg(env);
   }
+  if (memchr(bin.data, '\0', bin.size) != NULL)
+  {
+    return enif_make_badarg(env);
+  }
 
   char *value = enif_alloc(bin.size + 1);
   if (value == NULL)
