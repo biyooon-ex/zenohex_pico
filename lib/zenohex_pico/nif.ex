@@ -1,4 +1,5 @@
 defmodule ZenohexPico.Nif do
+  @moduledoc false
   if Mix.target() != :avm_esp32 do
     @on_load :load_nif
     @nif_name ~c"zenohex_pico"
