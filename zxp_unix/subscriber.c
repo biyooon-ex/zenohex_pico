@@ -24,6 +24,7 @@ struct zxp_subscriber_context
   pthread_cond_t not_empty;
   pthread_cond_t not_full;
   pthread_t forwarder;
+  ErlNifEnv *env;
   ErlNifPid pid;
   z_owned_sample_t queue[ZXP_SUBSCRIBER_QUEUE_CAPACITY];
   size_t dequeue_index;
@@ -45,21 +46,17 @@ static void zxp_subscriber_context_release(zxp_subscriber_context_t *context)
   pthread_cond_destroy(&context->not_full);
   pthread_cond_destroy(&context->not_empty);
   pthread_mutex_destroy(&context->mutex);
+  if (context->env != NULL)
+  {
+    enif_free_env(context->env);
+  }
   enif_free(context);
 }
 
 static void *zxp_subscriber_forwarder(void *arg)
 {
   zxp_subscriber_context_t *context = arg;
-  ErlNifEnv *env = enif_alloc_env();
-  if (env == NULL)
-  {
-    pthread_mutex_lock(&context->mutex);
-    context->stopping = true;
-    pthread_cond_broadcast(&context->not_full);
-    pthread_mutex_unlock(&context->mutex);
-    return NULL;
-  }
+  ErlNifEnv *env = context->env;
 
   for (;;)
   {
@@ -93,7 +90,6 @@ static void *zxp_subscriber_forwarder(void *arg)
     z_drop(z_move(sample));
   }
 
-  enif_free_env(env);
   return NULL;
 }
 
@@ -172,6 +168,12 @@ zxp_subscriber_context_t *zxp_subscriber_context_new(const ErlNifPid *pid)
     pthread_cond_destroy(&context->not_empty);
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
+    return NULL;
+  }
+  context->env = enif_alloc_env();
+  if (context->env == NULL)
+  {
+    zxp_subscriber_context_release(context);
     return NULL;
   }
   if (pthread_create(&context->forwarder, NULL, zxp_subscriber_forwarder, context) != 0)
