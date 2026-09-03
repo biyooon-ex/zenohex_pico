@@ -1,5 +1,6 @@
 defmodule ZenohexPico.ConfigTest do
   use ExUnit.Case
+  doctest ZenohexPico.Config
 
   alias ZenohexPico.Config
 
@@ -15,7 +16,7 @@ defmodule ZenohexPico.ConfigTest do
   test "rejects unsupported configuration keys" do
     {:ok, config} = Config.default()
 
-    assert_raise ArgumentError, ~r/unsupported Zenoh Pico configuration key/, fn ->
+    assert_raise ArgumentError, ~r/unsupported Zenoh configuration key/, fn ->
       Config.get(config, :unknown)
     end
   end

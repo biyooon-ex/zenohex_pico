@@ -1,5 +1,10 @@
 defmodule ZenohexPico.Sample do
-  @moduledoc false
+  @moduledoc """
+  A sample returned by a Zenoh query or delivered to a subscriber.
+
+  This struct corresponds to a Zenoh sample and contains its key expression,
+  payload, metadata, and optional attachment or timestamp.
+  """
 
   @type t :: %__MODULE__{
           attachment: binary() | nil,

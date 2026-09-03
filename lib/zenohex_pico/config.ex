@@ -1,8 +1,9 @@
 defmodule ZenohexPico.Config do
   @moduledoc """
-  Functions for creating and updating Zenoh Pico configurations.
+  Utility functions for working with Zenoh session configurations.
 
-  Configurations are opaque native references.
+  This module provides helpers to obtain default configuration
+  and retrieve or update individual config keys.
   """
 
   @keys %{
@@ -32,15 +33,12 @@ defmodule ZenohexPico.Config do
   }
 
   @typedoc """
-  An opaque native Zenoh Pico configuration.
+  An opaque native Zenoh configuration.
   """
   @type t :: reference()
 
   @typedoc """
-  A supported Zenoh Pico runtime configuration key.
-
-  Connection and listen timeout keys are excluded because Zenoh Pico exposes
-  them only when built with its unstable API feature.
+  A supported Zenoh runtime configuration key.
   """
   @type key ::
           :mode
@@ -68,27 +66,40 @@ defmodule ZenohexPico.Config do
           | :tls_verify_name_on_connect
 
   @doc """
-  Creates the default Zenoh Pico configuration.
+  Returns the default Zenoh configuration.
   """
   @spec default() :: {:ok, t()} | {:error, reason :: term()}
   defdelegate default(), to: ZenohexPico.Nif, as: :config_default
 
   @doc """
-  Gets the value for a Zenoh Pico configuration key.
+  Returns the value of the configuration at `key`.
 
-  Raises `ArgumentError` when `key` is not supported by this build-independent
-  API.
+  Raises `ArgumentError` when `key` is not supported.
+
+  ## Examples
+
+      iex> {:ok, config} = ZenohexPico.Config.default()
+      iex> {:ok, _value} = ZenohexPico.Config.get(config, :mode)
+      {:ok, "client"}
+      iex> {:error, _value} = ZenohexPico.Config.get(config, :connect)
+      {:error, :not_found}
   """
   @spec get(t(), key()) :: {:ok, String.t()} | {:error, reason :: term()}
   def get(config, key), do: ZenohexPico.Nif.config_get(config, key_id!(key))
 
   @doc """
-  Returns a new configuration with `value` assigned to a Zenoh Pico configuration key.
+  Inserts a configuration value at key, returning the updated config.
 
-  The original configuration remains unchanged.
+  Raises `ArgumentError` when `key` is not supported.
 
-  Raises `ArgumentError` when `key` is not supported by this build-independent
-  API.
+  ## Examples
+
+      iex> {:ok, config} = ZenohexPico.Config.default()
+      iex> {:error, _value} = ZenohexPico.Config.get(config, :connect)
+      {:error, :not_found}
+      iex> {:ok, config} = ZenohexPico.Config.insert(config, :connect, "tcp/127.0.0.1:7447")
+      iex> {:ok, _value} = ZenohexPico.Config.get(config, :connect)
+      {:ok, "tcp/127.0.0.1:7447"}
   """
   @spec insert(t(), key(), String.t()) :: {:ok, t()} | {:error, reason :: term()}
   def insert(config, key, value), do: ZenohexPico.Nif.config_insert(config, key_id!(key), value)
@@ -96,7 +107,7 @@ defmodule ZenohexPico.Config do
   defp key_id!(key) do
     case @keys do
       %{^key => key_id} -> key_id
-      _ -> raise ArgumentError, "unsupported Zenoh Pico configuration key: #{inspect(key)}"
+      _ -> raise ArgumentError, "unsupported Zenoh configuration key: #{inspect(key)}"
     end
   end
 end

@@ -1,6 +1,9 @@
 defmodule ZenohexPico.Subscriber do
   @moduledoc """
-  Interface for releasing Zenoh Pico subscribers.
+  Interface for managing Zenoh subscribers.
+
+  This module provides functions to undeclare subscribers, which stops
+  message receiving and releases associated native resources.
 
   Subscribers are created with `ZenohexPico.Session.declare_subscriber/4`.
   """
@@ -8,11 +11,13 @@ defmodule ZenohexPico.Subscriber do
   @typedoc """
   An opaque native Zenoh Pico subscriber.
   """
-  @type id :: reference()
+  @type t :: reference()
 
   @doc """
   Undeclares a subscriber and stops message delivery.
+
+  Stops receiving messages and releases resources associated with the subscriber.
   """
-  @spec undeclare(id()) :: :ok | {:error, reason :: term()}
+  @spec undeclare(t()) :: :ok | {:error, reason :: term()}
   defdelegate undeclare(subscriber), to: ZenohexPico.Nif, as: :subscriber_undeclare
 end

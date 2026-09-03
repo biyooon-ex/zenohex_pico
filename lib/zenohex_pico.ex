@@ -1,16 +1,27 @@
 defmodule ZenohexPico do
   @moduledoc """
-  Convenience APIs for one-shot Zenoh Pico operations.
+  ZenohexPico is a thin Elixir wrapper around Zenoh-Pico, implemented using C.
 
-  A Pico configuration must be supplied explicitly. For reusable connections,
-  use `ZenohexPico.Session` directly.
+  - Zenoh:
+    - https://zenoh.io/
+    - https://github.com/eclipse-zenoh/zenoh-pico
+
+  A Pico configuration must be supplied explicitly.
+
+  For reusable connections, use `ZenohexPico.Session` directly.
   """
 
   @doc """
-  Publishes a payload using a session opened from `config`.
+  Publishes a `payload` to the specified `key_expr`.
 
-  The temporary session is closed after the publish attempt, including when the
-  publish returns an error.
+  Internally opens a session, performs the publish, and ensures the session is closed.
+
+  ## Parameters
+
+  - `config` : The configuration used to open the session.
+  - `key_expr` : The key expression to publish to.
+  - `payload` : The binary payload to publish.
+  - `opts` : Additional options. See `ZenohexPico.Session.put/4` for details.
   """
   @spec put(ZenohexPico.Config.t(), String.t(), binary(), ZenohexPico.Session.put_opts()) ::
           :ok | {:error, reason :: term()}
@@ -25,10 +36,16 @@ defmodule ZenohexPico do
   end
 
   @doc """
-  Queries a selector using a session opened from `config`.
+  Query data with the given `selector`.
 
-  The temporary session is closed after the query attempt, including when the
-  query returns an error.
+  Internally opens a session, performs the query, and ensures the session is closed.
+
+  ## Parameters
+
+  - `config` : The configuration used to open the session.
+  - `selector` : The selector to query.
+  - `timeout` : Timeout in milliseconds to wait for query replies.
+  - `opts` : Additional options. See `ZenohexPico.Session.get/4` for details.
   """
   @spec get(
           ZenohexPico.Config.t(),
