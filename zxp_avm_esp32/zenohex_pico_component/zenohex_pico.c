@@ -15,12 +15,14 @@
 
 #include "config.h"
 #include "session.h"
+#include "session_option.h"
 
 static void zenohex_pico_init_nif(GlobalContext *global){
   ErlNifEnv env;
   erl_nif_env_partial_init_from_globalcontext(&env, global);
   zxp_config_enif_init_resource_type(&env);
   zxp_session_enif_init_resource_type(&env);
+  zxp_session_option_init_atoms(global);
 }
 
 // NIF 関数を保持する構造体
