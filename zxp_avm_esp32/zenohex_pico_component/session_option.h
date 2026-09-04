@@ -9,6 +9,7 @@ typedef struct {
   z_put_options_t options;
   z_owned_encoding_t encoding;
   z_owned_bytes_t attachment;
+  z_timestamp_t timestamp;
 } zxp_session_put_options_t;
 
 void zxp_session_option_init_atoms(GlobalContext *global);
