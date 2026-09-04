@@ -187,8 +187,6 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
     return zxp_session_error_tuple(ctx, "z_bytes_copy_from_buf");
   }
 
-  z_put_options_t options;
-  z_put_options_default(&options);
   pthread_mutex_lock(&resource->mutex);
   if (!z_internal_session_check(&resource->session)) {
     pthread_mutex_unlock(&resource->mutex);

@@ -4,12 +4,14 @@
 #include <zenoh-pico.h>
 
 #include "session_option.h"
+#include "timestamp.h"
 
 static term encoding_atom;
 static term attachment_atom;
 static term congestion_control_atom;
 static term priority_atom;
 static term express_atom;
+static term timestamp_atom;
 static term block_atom;
 static term drop_atom;
 static term real_time_atom;
@@ -29,6 +31,7 @@ void zxp_session_option_init_atoms(GlobalContext *global)
   congestion_control_atom = ZXP_ATOM(global, "\x12", "congestion_control");
   priority_atom = ZXP_ATOM(global, "\x8", "priority");
   express_atom = ZXP_ATOM(global, "\x7", "express");
+  timestamp_atom = ZXP_ATOM(global, "\x9", "timestamp");
   block_atom = ZXP_ATOM(global, "\x5", "block");
   drop_atom = ZXP_ATOM(global, "\x4", "drop");
   real_time_atom = ZXP_ATOM(global, "\x9", "real_time");
@@ -58,6 +61,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
   z_put_options_default(&put_options->options);
   z_internal_null(&put_options->encoding);
   z_internal_null(&put_options->attachment);
+  put_options->timestamp = _z_timestamp_null();
 
   while (term_is_nonempty_list(option_list)) {
     term option = term_get_list_head(option_list);
@@ -89,6 +93,10 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
       put_options->options.is_express = true;
     } else if (key == express_atom && value == FALSE_ATOM) {
       put_options->options.is_express = false;
+    } else if (key == timestamp_atom && term_is_binary(value)) {
+      if (!zxp_timestamp_from_binary(term_binary_data(value), term_binary_size(value),
+              &put_options->timestamp)) return false;
+      put_options->options.timestamp = &put_options->timestamp;
     } else {
       return false;
     }
