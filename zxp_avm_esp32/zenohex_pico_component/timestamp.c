@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <inttypes.h>
+#include <stdio.h>
 #include <zenoh-pico.h>
 
 #include "timestamp.h"
@@ -49,6 +51,22 @@ static int64_t zxp_days_from_civil(uint32_t year, uint32_t month, uint32_t day)
   return era * 146097 + (int64_t) day_of_era - 719468;
 }
 
+static void zxp_civil_from_days(int64_t days, uint32_t *year, uint32_t *month, uint32_t *day)
+{
+  days += 719468;
+  int64_t era = (days >= 0 ? days : days - 146096) / 146097;
+  uint32_t day_of_era = (uint32_t) (days - era * 146097);
+  uint32_t year_of_era =
+      (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365;
+  int64_t calculated_year = (int64_t) year_of_era + era * 400;
+  uint32_t day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+  uint32_t month_prime = (5 * day_of_year + 2) / 153;
+
+  *day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+  *month = month_prime < 10 ? month_prime + 3 : month_prime - 9;
+  *year = (uint32_t) (calculated_year + (*month <= 2));
+}
+
 bool zxp_timestamp_from_binary(const char *binary_data, size_t size, z_timestamp_t *timestamp)
 {
   const uint8_t *data = (const uint8_t *) binary_data;
@@ -78,5 +96,37 @@ bool zxp_timestamp_from_binary(const char *binary_data, size_t size, z_timestamp
   timestamp->valid = true;
   timestamp->id = id;
   timestamp->time = _z_timestamp_ntp64_from_time((uint32_t) seconds, nanos);
+  return true;
+}
+
+bool zxp_timestamp_to_binary(const z_timestamp_t *timestamp, char data[63])
+{
+  if (timestamp == NULL) return false;
+
+  uint64_t ntp64 = z_timestamp_ntp64_time(timestamp);
+  uint64_t seconds = ntp64 >> 32;
+  uint32_t fraction = (uint32_t) ntp64;
+  uint32_t nanos = (uint32_t) (((uint64_t) fraction * 1000000000 + ((uint64_t) 1 << 31)) >> 32);
+  if (nanos == 1000000000) {
+    seconds++;
+    nanos = 0;
+  }
+
+  uint32_t year, month, day;
+  zxp_civil_from_days((int64_t) (seconds / 86400), &year, &month, &day);
+  if (year > 9999) return false;
+
+  uint64_t seconds_of_day = seconds % 86400;
+    int length = snprintf(data, 64, "%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32
+      "T%02llu:%02llu:%02llu.%09" PRIu32 "Z/",
+      year, month, day, (unsigned long long) (seconds_of_day / 3600),
+      (unsigned long long) ((seconds_of_day / 60) % 60),
+      (unsigned long long) (seconds_of_day % 60), nanos);
+  if (length != 31) return false;
+
+  z_id_t id = z_timestamp_id(timestamp);
+  for (size_t index = 0; index < ZENOH_ID_SIZE; index++) {
+    snprintf(data + 31 + index * 2, 3, "%02x", id.id[index]);
+  }
   return true;
 }

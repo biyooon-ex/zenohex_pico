@@ -6,5 +6,6 @@
 #include <zenoh-pico.h>
 
 bool zxp_timestamp_from_binary(const char *data, size_t size, z_timestamp_t *timestamp);
+bool zxp_timestamp_to_binary(const z_timestamp_t *timestamp, char data[63]);
 
 #endif

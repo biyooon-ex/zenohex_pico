@@ -14,6 +14,8 @@
 #include <zenoh-pico.h>
 
 #include "config.h"
+#include "query.h"
+#include "sample.h"
 #include "session.h"
 #include "session_option.h"
 
@@ -22,6 +24,8 @@ static void zenohex_pico_init_nif(GlobalContext *global){
   erl_nif_env_partial_init_from_globalcontext(&env, global);
   zxp_config_enif_init_resource_type(&env);
   zxp_session_enif_init_resource_type(&env);
+  zxp_query_init_atoms(global);
+  zxp_sample_init_atoms(global);
   zxp_session_option_init_atoms(global);
 }
 
@@ -56,6 +60,11 @@ static const struct Nif session_put_nif = {
   .nif_ptr   = zxp_session_put
 };
 
+static const struct Nif session_get_nif = {
+  .base.type = NIFFunctionType,
+  .nif_ptr   = zxp_session_get
+};
+
 // NIF の呼び出しと関数実体を紐付ける関数
 const struct Nif *zenohex_pico_get_nif(const char *nifname)
 {
@@ -82,6 +91,10 @@ const struct Nif *zenohex_pico_get_nif(const char *nifname)
   if (strcmp("zenohex_pico_nif:session_put/4", nifname) == 0 ||
       strcmp("Elixir.ZenohexPico.Nif:session_put/4", nifname) == 0) {
     return &session_put_nif;
+  }
+  if (strcmp("zenohex_pico_nif:session_get/4", nifname) == 0 ||
+      strcmp("Elixir.ZenohexPico.Nif:session_get/4", nifname) == 0) {
+    return &session_get_nif;
   }
   return NULL;
 }
