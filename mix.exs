@@ -23,7 +23,14 @@ defmodule ZenohexPico.MixProject do
          git: "https://github.com/atomvm/exatomvm.git",
          ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8"}
       ],
-      atomvm: [start: ZenohexPico.AvmEsp32, flash_offset: 0x250000],
+      atomvm: [
+        start:
+          case Mix.env() do
+            :test -> ZenohexPico.AvmEsp32Test
+            _ -> ZenohexPico.AvmEsp32
+          end,
+        flash_offset: 0x250000
+      ],
       aliases: [
         flash: [
           "atomvm.packbeam",
