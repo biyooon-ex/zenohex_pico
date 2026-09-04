@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "session.h"
+#include "session_option.h"
 
 ErlNifResourceType *zxp_session_resource_type = NULL;
 static term session_closed_atom;
@@ -158,7 +159,12 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   ErlNifEnv *env = erl_nif_env_from_context(ctx);
   zxp_session_resource_t *resource = NULL;
   if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **) &resource) ||
-      !term_is_binary(argv[1]) || !term_is_binary(argv[2]) || !term_is_nil(argv[3])) {
+      !term_is_binary(argv[1]) || !term_is_binary(argv[2])) {
+    RAISE_ERROR(BADARG_ATOM);
+  }
+
+  zxp_session_put_options_t put_options;
+  if (!zxp_session_put_options_init(argv[3], &put_options)) {
     RAISE_ERROR(BADARG_ATOM);
   }
 
@@ -167,6 +173,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   z_result_t result = z_keyexpr_from_substr(
       &keyexpr, term_binary_data(argv[1]), term_binary_size(argv[1]));
   if (result != Z_OK) {
+    zxp_session_put_options_drop(&put_options);
     return zxp_session_error_tuple(ctx, "z_keyexpr_from_substr");
   }
 
@@ -176,6 +183,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
       &payload, (const uint8_t *) term_binary_data(argv[2]), term_binary_size(argv[2]));
   if (result != Z_OK) {
     z_drop(z_move(keyexpr));
+    zxp_session_put_options_drop(&put_options);
     return zxp_session_error_tuple(ctx, "z_bytes_copy_from_buf");
   }
 
@@ -186,6 +194,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
     pthread_mutex_unlock(&resource->mutex);
     z_drop(z_move(payload));
     z_drop(z_move(keyexpr));
+    zxp_session_put_options_drop(&put_options);
     if (memory_ensure_free_with_roots(ctx, TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
         MEMORY_GC_OK) {
       RAISE_ERROR(OUT_OF_MEMORY_ATOM);
@@ -195,9 +204,11 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
     term_put_tuple_element(response, 1, session_closed_atom);
     return response;
   }
-  result = z_put(z_loan(resource->session), z_loan(keyexpr), z_move(payload), &options);
+  result = z_put(z_loan(resource->session), z_loan(keyexpr), z_move(payload),
+      &put_options.options);
   pthread_mutex_unlock(&resource->mutex);
   z_drop(z_move(keyexpr));
+  zxp_session_put_options_drop(&put_options);
   if (result != Z_OK) {
     return zxp_session_error_tuple(ctx, "z_put");
   }
