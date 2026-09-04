@@ -28,6 +28,15 @@ defmodule ZenohexPico.MixProject do
         flash: [
           "atomvm.packbeam",
           "atomvm.esp32.flash --port /dev/ttyACM0 --baud 921600"
+        ],
+        format: [
+          fn _ ->
+            if not is_nil(System.find_executable("clang-format")) do
+              files = Path.wildcard("zxp_avm_esp32/**/*.{c,h}")
+              System.cmd("clang-format", ["-i" | files])
+            end
+          end,
+          "format"
         ]
       ]
     ]
