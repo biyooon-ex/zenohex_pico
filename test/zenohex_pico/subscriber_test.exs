@@ -4,7 +4,7 @@ defmodule ZenohexPico.SubscriberTest do
   alias ZenohexPico.{Config, Session, Subscriber}
 
   test "receives samples and undeclares subscribers" do
-    assert {:ok, listen_session} = Session.open(peer_config(:listen, 7449))
+    assert {:ok, listen_session} = Session.open(peer_config(:listen, 7447))
     on_exit(fn -> Session.close(listen_session) end)
 
     assert {:ok, subscriber} =
@@ -12,7 +12,7 @@ defmodule ZenohexPico.SubscriberTest do
 
     on_exit(fn -> Subscriber.undeclare(subscriber) end)
 
-    assert {:ok, connect_session} = Session.open(peer_config(:connect, 7449))
+    assert {:ok, connect_session} = Session.open(peer_config(:connect, 7447))
     on_exit(fn -> Session.close(connect_session) end)
 
     assert :ok = Session.put(connect_session, "zenohex_pico/subscriber", "payload")
