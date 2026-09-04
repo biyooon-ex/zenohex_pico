@@ -49,6 +49,11 @@ static const struct Nif session_close_nif = {
   .nif_ptr   = zxp_session_close
 };
 
+static const struct Nif session_put_nif = {
+  .base.type = NIFFunctionType,
+  .nif_ptr   = zxp_session_put
+};
+
 // NIF の呼び出しと関数実体を紐付ける関数
 const struct Nif *zenohex_pico_get_nif(const char *nifname)
 {
@@ -71,6 +76,10 @@ const struct Nif *zenohex_pico_get_nif(const char *nifname)
   if (strcmp("zenohex_pico_nif:session_close/1", nifname) == 0 ||
       strcmp("Elixir.ZenohexPico.Nif:session_close/1", nifname) == 0) {
     return &session_close_nif;
+  }
+  if (strcmp("zenohex_pico_nif:session_put/4", nifname) == 0 ||
+      strcmp("Elixir.ZenohexPico.Nif:session_put/4", nifname) == 0) {
+    return &session_put_nif;
   }
   return NULL;
 }
