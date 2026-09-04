@@ -6,9 +6,9 @@
 
 extern ErlNifResourceType *zxp_config_resource_type;
 
-bool zxp_config_enif_init_resource_type(ErlNifEnv *env);
-term zxp_config_default(Context *ctx, int argc, term argv[]);
-term zxp_config_get(Context *ctx, int argc, term argv[]);
-term zxp_config_insert(Context *ctx, int argc, term argv[]);
+extern bool zxp_config_enif_init_resource_type(ErlNifEnv *env);
+extern term zxp_config_default(Context *ctx, int argc, term argv[]);
+extern term zxp_config_get(Context *ctx, int argc, term argv[]);
+extern term zxp_config_insert(Context *ctx, int argc, term argv[]);
 
 #endif

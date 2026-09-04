@@ -1,103 +1,96 @@
-// OK_ATOM が定義されているヘッダ
+// Defines OK_ATOM.
 #include <defaultatoms.h>
-//
 #include <erl_nif_priv.h>
-// Nif 構造体が定義されているヘッダ
+// Defines struct Nif.
 #include <nifs.h>
-// REGISTER_NIF_COLLECTION が定義されているヘッダ
+// Defines REGISTER_NIF_COLLECTION.
 #include <portnifloader.h>
-// strcmp が定義されているヘッダ
+// Defines strcmp.
 #include <string.h>
-// term 型が定義されているヘッダ
+// Defines term.
 #include <term.h>
 
 #include <zenoh-pico.h>
 
+#include "avm_compat.h"
 #include "config.h"
-#include "query.h"
-#include "sample.h"
 #include "session.h"
 #include "session_option.h"
 
-static void zenohex_pico_init_nif(GlobalContext *global){
+static void zenohex_pico_init_nif(GlobalContext *global)
+{
   ErlNifEnv env;
   erl_nif_env_partial_init_from_globalcontext(&env, global);
+  zxp_avm_init_atoms(global);
   zxp_config_enif_init_resource_type(&env);
   zxp_session_enif_init_resource_type(&env);
-  zxp_query_init_atoms(global);
-  zxp_sample_init_atoms(global);
-  zxp_session_option_init_atoms(global);
 }
 
-// NIF 関数を保持する構造体
+// NIF function descriptors.
 static const struct Nif config_default_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_config_default // NIF 関数実体のポインタ
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_config_default // NIF implementation pointer.
 };
 
-static const struct Nif config_get_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_config_get
-};
+static const struct Nif config_get_nif = {.base.type = NIFFunctionType, .nif_ptr = zxp_config_get};
 
-static const struct Nif config_insert_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_config_insert
-};
+static const struct Nif config_insert_nif = {.base.type = NIFFunctionType,
+                                             .nif_ptr = zxp_config_insert};
 
 static const struct Nif session_open_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_session_open // NIF 関数実体のポインタ
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_session_open // NIF implementation pointer.
 };
 
-static const struct Nif session_close_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_session_close
-};
+static const struct Nif session_close_nif = {.base.type = NIFFunctionType,
+                                             .nif_ptr = zxp_session_close};
 
-static const struct Nif session_put_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_session_put
-};
+static const struct Nif session_put_nif = {.base.type = NIFFunctionType,
+                                           .nif_ptr = zxp_session_put};
 
-static const struct Nif session_get_nif = {
-  .base.type = NIFFunctionType,
-  .nif_ptr   = zxp_session_get
-};
+static const struct Nif session_get_nif = {.base.type = NIFFunctionType,
+                                           .nif_ptr = zxp_session_get};
 
-// NIF の呼び出しと関数実体を紐付ける関数
+// Resolves NIF names to their function descriptors.
 const struct Nif *zenohex_pico_get_nif(const char *nifname)
 {
   if (strcmp("zenohex_pico_nif:config_default/0", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:config_default/0", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:config_default/0", nifname) == 0)
+  {
     return &config_default_nif;
   }
   if (strcmp("zenohex_pico_nif:config_get/2", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:config_get/2", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:config_get/2", nifname) == 0)
+  {
     return &config_get_nif;
   }
   if (strcmp("zenohex_pico_nif:config_insert/3", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:config_insert/3", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:config_insert/3", nifname) == 0)
+  {
     return &config_insert_nif;
   }
   if (strcmp("zenohex_pico_nif:session_open/1", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:session_open/1", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:session_open/1", nifname) == 0)
+  {
     return &session_open_nif;
   }
   if (strcmp("zenohex_pico_nif:session_close/1", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:session_close/1", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:session_close/1", nifname) == 0)
+  {
     return &session_close_nif;
   }
   if (strcmp("zenohex_pico_nif:session_put/4", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:session_put/4", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:session_put/4", nifname) == 0)
+  {
     return &session_put_nif;
   }
   if (strcmp("zenohex_pico_nif:session_get/4", nifname) == 0 ||
-      strcmp("Elixir.ZenohexPico.Nif:session_get/4", nifname) == 0) {
+      strcmp("Elixir.ZenohexPico.Nif:session_get/4", nifname) == 0)
+  {
     return &session_get_nif;
   }
   return NULL;
 }
 
-// NIF を登録するマクロ
+// Registers the AtomVM NIF collection.
 REGISTER_NIF_COLLECTION(zenohex_pico, zenohex_pico_init_nif, NULL, zenohex_pico_get_nif)

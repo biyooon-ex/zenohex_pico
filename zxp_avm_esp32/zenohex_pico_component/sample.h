@@ -1,21 +1,23 @@
 #ifndef ZXP_SAMPLE_H
 #define ZXP_SAMPLE_H
 
+#include <nifs.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <nifs.h>
 #include <zenoh-pico.h>
 
-typedef struct {
+typedef struct
+{
   uint8_t *data;
   size_t size;
 } zxp_bytes_t;
 
-typedef struct {
+typedef struct
+{
   zxp_bytes_t attachment;
   zxp_bytes_t encoding;
-  zxp_bytes_t key_expr;
+  zxp_bytes_t keyexpr;
   zxp_bytes_t payload;
   z_congestion_control_t congestion_control;
   bool express;
@@ -25,9 +27,9 @@ typedef struct {
   z_timestamp_t timestamp;
 } zxp_sample_t;
 
-void zxp_sample_init_atoms(GlobalContext *global);
-void zxp_sample_drop(zxp_sample_t *sample);
-size_t zxp_sample_heap_size(const zxp_sample_t *sample);
-term zxp_sample_to_term(Context *ctx, const zxp_sample_t *sample);
+extern void zxp_sample_drop(zxp_sample_t *sample);
+extern bool zxp_sample_from_zp_sample(zxp_sample_t *destination, const z_loaned_sample_t *sample);
+extern size_t zxp_sample_heap_size(const zxp_sample_t *sample);
+extern term zxp_struct_from_zp_sample(Context *ctx, const zxp_sample_t *sample);
 
 #endif
