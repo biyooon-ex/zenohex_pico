@@ -197,7 +197,7 @@ term zxp_binary_from_zp_timestamp(Context *ctx, const z_timestamp_t *timestamp)
 {
   if (timestamp == NULL)
   {
-    return term_nil();
+    return nil_atom;
   }
 
   char timestamp_string[63];

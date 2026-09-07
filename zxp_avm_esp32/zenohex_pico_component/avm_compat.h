@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 // Primitive.
+extern term nil_atom;
 extern term not_found_atom;
 extern term timeout_atom;
 extern term session_closed_atom;
@@ -62,6 +63,11 @@ extern term data_high_atom;
 extern term data_atom;
 extern term data_low_atom;
 extern term background_atom;
+
+static inline term zxp_avm_empty_list(void)
+{
+  return term_nil();
+}
 
 extern void zxp_avm_init_atoms(GlobalContext *global);
 extern term zxp_avm_binary_from_bytes(Context *ctx, const void *data, size_t size);

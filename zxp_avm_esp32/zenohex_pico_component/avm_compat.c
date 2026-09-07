@@ -5,6 +5,7 @@
 #include "avm_compat.h"
 
 // Primitive.
+term nil_atom;
 term not_found_atom;
 term timeout_atom;
 term session_closed_atom;
@@ -68,6 +69,7 @@ term background_atom;
 void zxp_avm_init_atoms(GlobalContext *global)
 {
   // Primitive.
+  nil_atom = ZXP_ATOM(global, "\x3", "nil");
   not_found_atom = ZXP_ATOM(global, "\x9", "not_found");
   timeout_atom = ZXP_ATOM(global, "\x7", "timeout");
   session_closed_atom = ZXP_ATOM(global, "\xE", "session_closed");
