@@ -123,8 +123,7 @@ static bool zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadl
   }
 
   uint64_t current_seconds = (uint64_t)deadline->tv_sec;
-  if ((time_t)current_seconds != deadline->tv_sec ||
-      timeout_seconds > UINT64_MAX - current_seconds)
+  if ((time_t)current_seconds != deadline->tv_sec || timeout_seconds > UINT64_MAX - current_seconds)
   {
     return false;
   }
