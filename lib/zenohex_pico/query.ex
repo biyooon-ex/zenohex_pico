@@ -8,7 +8,7 @@ defmodule ZenohexPico.Query do
     The payload contains the error response and `encoding` identifies its format.
     """
 
-    @type t :: %__MODULE__{payload: binary(), encoding: String.t()}
+    @type t :: %__MODULE__{payload: binary() | nil, encoding: String.t() | nil}
     defstruct payload: <<>>, encoding: "zenoh/bytes"
   end
 end
