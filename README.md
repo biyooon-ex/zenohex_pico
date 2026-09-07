@@ -39,11 +39,16 @@ cd src/platforms/esp32/
 idf.py set-target esp32s3
 ```
 
-#### Enable LWIP_IPV6
+#### menuconfig
 
 ```
 idf.py menuconfig
 ```
+
+- Enable LWIP_IPV6
+  - Zenoh Pico requires IPv6.
+- Change ESP_MAIN_TASK_STACK_SIZE from 3584 to 8192
+  - ZenohexPico on the ESP32-S3 requires a larger main task stack than the default 3584 bytes.
 
 #### build
 
