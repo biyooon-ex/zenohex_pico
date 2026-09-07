@@ -26,7 +26,7 @@ defmodule ZenohexPico.MixProject do
       atomvm: [
         start:
           case Mix.env() do
-            :test -> ZenohexPico.AvmEsp32Test
+            :test -> ZenohexPico.AvmEsp32.Test
             _ -> ZenohexPico.AvmEsp32
           end,
         flash_offset: 0x250000
