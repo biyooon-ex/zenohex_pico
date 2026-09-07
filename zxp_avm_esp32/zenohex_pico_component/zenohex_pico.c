@@ -29,27 +29,38 @@ static void zenohex_pico_init_nif(GlobalContext *global)
 // NIF function descriptors.
 static const struct Nif config_default_nif = {
     .base.type = NIFFunctionType,
-    .nif_ptr = zxp_config_default // NIF implementation pointer.
+    .nif_ptr = zxp_config_default,
 };
 
-static const struct Nif config_get_nif = {.base.type = NIFFunctionType, .nif_ptr = zxp_config_get};
+static const struct Nif config_get_nif = {
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_config_get,
+};
 
-static const struct Nif config_insert_nif = {.base.type = NIFFunctionType,
-                                             .nif_ptr = zxp_config_insert};
+static const struct Nif config_insert_nif = {
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_config_insert,
+};
 
 static const struct Nif session_open_nif = {
     .base.type = NIFFunctionType,
-    .nif_ptr = zxp_session_open // NIF implementation pointer.
+    .nif_ptr = zxp_session_open,
 };
 
-static const struct Nif session_close_nif = {.base.type = NIFFunctionType,
-                                             .nif_ptr = zxp_session_close};
+static const struct Nif session_close_nif = {
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_session_close,
+};
 
-static const struct Nif session_put_nif = {.base.type = NIFFunctionType,
-                                           .nif_ptr = zxp_session_put};
+static const struct Nif session_put_nif = {
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_session_put,
+};
 
-static const struct Nif session_get_nif = {.base.type = NIFFunctionType,
-                                           .nif_ptr = zxp_session_get};
+static const struct Nif session_get_nif = {
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_session_get,
+};
 
 // Resolves NIF names to their function descriptors.
 const struct Nif *zenohex_pico_get_nif(const char *nifname)
