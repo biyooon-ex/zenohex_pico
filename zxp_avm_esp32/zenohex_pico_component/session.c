@@ -556,7 +556,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
 
-  term replies = term_nil();
+  term replies = zxp_avm_empty_list();
   for (size_t index = context->reply_count; index > 0; index--)
   {
     zxp_session_reply_t *reply = &context->replies[index - 1];

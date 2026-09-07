@@ -134,8 +134,7 @@ size_t zxp_sample_heap_size(const zxp_sample_t *sample)
 
 static term zxp_bytes_to_term(Context *ctx, const zxp_bytes_t *bytes)
 {
-  return bytes->data == NULL ? term_nil()
-                             : zxp_avm_binary_from_bytes(ctx, bytes->data, bytes->size);
+  return bytes->data == NULL ? nil_atom : zxp_avm_binary_from_bytes(ctx, bytes->data, bytes->size);
 }
 
 static term zxp_atom_from_zp_congestion_control(z_congestion_control_t congestion_control)
