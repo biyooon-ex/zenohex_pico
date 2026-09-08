@@ -29,6 +29,23 @@ cd AtomVM/
 git checkout 0220c78ee9e7cf6c763a278b44d81ce309fcf1ab
 ```
 
+### build AtomVM for unix
+
+This step is necessary to prepare `AtomVM/build/libs`, which is used in the following step.
+
+```
+mkdir build
+cd build
+mise use erlang@27.3.4.15
+mise use elixir@1.18.3-otp-27
+mix local.hex
+mix local.rebar
+export PATH="$MIX_HOME/elixir/1-18:$PATH"
+cmake ..
+make -j
+cd ..
+```
+
 ### build for the device
 
 #### set target
