@@ -93,7 +93,7 @@ size_t zxp_reply_error_heap_size(const zxp_reply_error_t *reply_error)
 
 static term zxp_bytes_to_term(Context *ctx, const zxp_bytes_t *bytes)
 {
-  return bytes->data == NULL ? nil_atom : zxp_avm_binary_from_bytes(ctx, bytes->data, bytes->size);
+  return bytes->data == NULL ? nil_atom : zxp_binary_from_bytes(ctx, bytes->data, bytes->size);
 }
 
 term zxp_struct_from_zp_reply_err(Context *ctx, const zxp_reply_error_t *reply_err)

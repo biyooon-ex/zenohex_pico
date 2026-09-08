@@ -190,5 +190,5 @@ term zxp_binary_from_zp_timestamp(Context *ctx, const z_timestamp_t *timestamp)
   {
     snprintf(timestamp_string + 31 + index * 2, 3, "%02x", id.id[index]);
   }
-  return zxp_avm_binary_from_bytes(ctx, timestamp_string, sizeof(timestamp_string) - 1);
+  return zxp_binary_from_bytes(ctx, timestamp_string, sizeof(timestamp_string) - 1);
 }

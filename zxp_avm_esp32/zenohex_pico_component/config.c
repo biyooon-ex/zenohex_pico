@@ -109,7 +109,7 @@ term zxp_config_get(Context *ctx, int argc, term argv[])
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
 
-  term binary = zxp_avm_binary_from_bytes(ctx, value, len);
+  term binary = zxp_binary_from_bytes(ctx, value, len);
   return zxp_avm_tuple2(ctx, OK_ATOM, binary);
 }
 

@@ -129,7 +129,7 @@ void zxp_avm_init_atoms(GlobalContext *global)
   background_atom = ZXP_ATOM(global, "\xA", "background");
 }
 
-term zxp_avm_binary_from_bytes(Context *ctx, const void *data, size_t size)
+term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size)
 {
   return term_from_literal_binary(data, size, &ctx->heap, ctx->global);
 }
@@ -159,5 +159,5 @@ term zxp_avm_error_tuple(Context *ctx, const char *reason)
   {
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
-  return zxp_avm_tuple2(ctx, ERROR_ATOM, zxp_avm_binary_from_bytes(ctx, reason, reason_size));
+  return zxp_avm_tuple2(ctx, ERROR_ATOM, zxp_binary_from_bytes(ctx, reason, reason_size));
 }

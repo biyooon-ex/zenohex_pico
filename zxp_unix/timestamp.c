@@ -192,5 +192,6 @@ ERL_NIF_TERM zxp_binary_from_zp_timestamp(ErlNifEnv *env, const z_timestamp_t *t
   {
     snprintf(timestamp_string + 31 + index * 2, 3, "%02x", id.id[index]);
   }
-  return zxp_binary_from_bytes(env, (const uint8_t *)timestamp_string, sizeof(timestamp_string) - 1);
+  return zxp_binary_from_bytes(
+      env, (const uint8_t *)timestamp_string, sizeof(timestamp_string) - 1);
 }
