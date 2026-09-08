@@ -5,9 +5,19 @@ defmodule ZenohexPico.AvmEsp32.Test do
     @compile {:no_warn_undefined, [:esp]}
     @host_ipv4_address (
                          ipv4_address = ~S/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/
-                         {route, 0} = System.cmd("ip", ["-4", "route", "get", "1.1.1.1"])
-                         [_, host] = Regex.run(~r/\bsrc\s+(#{ipv4_address})\b/, route)
-                         host
+
+                         case :os.type() do
+                           {:unix, :linux} ->
+                             {route, 0} = System.cmd("ip", ["-4", "route", "get", "1.1.1.1"])
+                             [_, host] = Regex.run(~r/\bsrc\s+(#{ipv4_address})\b/, route)
+                             host
+
+                           {:unix, :darwin} ->
+                             {route, 0} = System.cmd("route", ["-n", "get", "1.1.1.1"])
+                             [_, iface] = Regex.run(~r/interface:\s+(\S+)/, route)
+                             {host, 0} = System.cmd("ipconfig", ["getifaddr", iface])
+                             String.trim(host)
+                         end
                        )
 
     def start do
