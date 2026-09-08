@@ -142,13 +142,12 @@ bool zxp_timestamp_from_binary(const char *binary, size_t length, z_timestamp_t 
   return true;
 }
 
-bool zxp_timestamp_to_binary(const z_timestamp_t *timestamp, char data[63])
+term zxp_binary_from_zp_timestamp(Context *ctx, const z_timestamp_t *timestamp)
 {
   if (timestamp == NULL)
   {
-    return false;
+    return nil_atom;
   }
-
   uint64_t ntp64 = z_timestamp_ntp64_time(timestamp);
   uint64_t seconds = ntp64 >> 32;
   uint32_t fraction = (uint32_t)ntp64;
@@ -165,13 +164,15 @@ bool zxp_timestamp_to_binary(const z_timestamp_t *timestamp, char data[63])
   zxp_civil_from_days((int64_t)(seconds / 86400), &year, &month, &day);
   if (year > 9999)
   {
-    return false;
+    RAISE_ERROR(BADARG_ATOM);
   }
 
   uint64_t seconds_of_day = seconds % 86400;
+  z_id_t id = z_timestamp_id(timestamp);
+  char timestamp_string[64];
   int length =
-      snprintf(data,
-               64,
+      snprintf(timestamp_string,
+               sizeof(timestamp_string),
                "%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 "T%02llu:%02llu:%02llu.%09" PRIu32 "Z/",
                year,
                month,
@@ -182,28 +183,12 @@ bool zxp_timestamp_to_binary(const z_timestamp_t *timestamp, char data[63])
                nanos);
   if (length != 31)
   {
-    return false;
-  }
-
-  z_id_t id = z_timestamp_id(timestamp);
-  for (size_t index = 0; index < ZENOH_ID_SIZE; index++)
-  {
-    snprintf(data + 31 + index * 2, 3, "%02x", id.id[index]);
-  }
-  return true;
-}
-
-term zxp_binary_from_zp_timestamp(Context *ctx, const z_timestamp_t *timestamp)
-{
-  if (timestamp == NULL)
-  {
-    return nil_atom;
-  }
-
-  char timestamp_string[63];
-  if (!zxp_timestamp_to_binary(timestamp, timestamp_string))
-  {
     RAISE_ERROR(BADARG_ATOM);
   }
-  return zxp_avm_binary_from_bytes(ctx, timestamp_string, sizeof(timestamp_string));
+
+  for (size_t index = 0; index < ZENOH_ID_SIZE; index++)
+  {
+    snprintf(timestamp_string + 31 + index * 2, 3, "%02x", id.id[index]);
+  }
+  return zxp_avm_binary_from_bytes(ctx, timestamp_string, sizeof(timestamp_string) - 1);
 }

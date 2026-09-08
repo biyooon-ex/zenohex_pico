@@ -1,4 +1,5 @@
 #include <erl_nif.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <zenoh-pico.h>
@@ -171,16 +172,17 @@ ERL_NIF_TERM zxp_binary_from_zp_timestamp(ErlNifEnv *env, const z_timestamp_t *t
   uint64_t seconds_of_day = seconds % 86400;
   z_id_t id = z_timestamp_id(timestamp);
   char timestamp_string[64];
-  int length = snprintf(timestamp_string,
-                        sizeof(timestamp_string),
-                        "%04u-%02u-%02uT%02llu:%02llu:%02llu.%09uZ/",
-                        year,
-                        month,
-                        day,
-                        (unsigned long long)(seconds_of_day / 3600),
-                        (unsigned long long)((seconds_of_day / 60) % 60),
-                        (unsigned long long)(seconds_of_day % 60),
-                        nanos);
+  int length =
+      snprintf(timestamp_string,
+               sizeof(timestamp_string),
+               "%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 "T%02llu:%02llu:%02llu.%09" PRIu32 "Z/",
+               year,
+               month,
+               day,
+               (unsigned long long)(seconds_of_day / 3600),
+               (unsigned long long)((seconds_of_day / 60) % 60),
+               (unsigned long long)(seconds_of_day % 60),
+               nanos);
   if (length != 31)
   {
     return zxp_raise(env, __FILE__, __LINE__, "timestamp formatting failed");
@@ -190,5 +192,5 @@ ERL_NIF_TERM zxp_binary_from_zp_timestamp(ErlNifEnv *env, const z_timestamp_t *t
   {
     snprintf(timestamp_string + 31 + index * 2, 3, "%02x", id.id[index]);
   }
-  return zxp_binary_from_bytes(env, (const uint8_t *)timestamp_string, 63);
+  return zxp_binary_from_bytes(env, (const uint8_t *)timestamp_string, sizeof(timestamp_string) - 1);
 }
