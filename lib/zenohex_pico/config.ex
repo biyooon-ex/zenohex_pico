@@ -10,26 +10,29 @@ defmodule ZenohexPico.Config do
     mode: 0x40,
     connect: 0x41,
     listen: 0x42,
-    user: 0x43,
-    password: 0x44,
+    # Currently unused by Zenoh Pico.
+    # user: 0x43,
+    # password: 0x44,
     multicast_scouting: 0x45,
     multicast_locator: 0x46,
     scouting_timeout: 0x47,
     scouting_what: 0x48,
-    session_zid: 0x49,
-    add_timestamp: 0x4A,
-    tls_root_ca_certificate: 0x4B,
-    tls_root_ca_certificate_base64: 0x4C,
-    tls_listen_private_key: 0x4D,
-    tls_listen_private_key_base64: 0x4E,
-    tls_listen_certificate: 0x4F,
-    tls_listen_certificate_base64: 0x50,
-    tls_enable_mtls: 0x51,
-    tls_connect_private_key: 0x52,
-    tls_connect_private_key_base64: 0x53,
-    tls_connect_certificate: 0x54,
-    tls_connect_certificate_base64: 0x55,
-    tls_verify_name_on_connect: 0x56
+    session_zid: 0x49
+    # Currently unused by Zenoh Pico.
+    # add_timestamp: 0x4A
+    # TLS configuration requires Z_FEATURE_LINK_TLS=1.
+    # tls_root_ca_certificate: 0x4B,
+    # tls_root_ca_certificate_base64: 0x4C,
+    # tls_listen_private_key: 0x4D,
+    # tls_listen_private_key_base64: 0x4E,
+    # tls_listen_certificate: 0x4F,
+    # tls_listen_certificate_base64: 0x50,
+    # tls_enable_mtls: 0x51,
+    # tls_connect_private_key: 0x52,
+    # tls_connect_private_key_base64: 0x53,
+    # tls_connect_certificate: 0x54,
+    # tls_connect_certificate_base64: 0x55,
+    # tls_verify_name_on_connect: 0x56
   }
 
   @typedoc """
@@ -44,26 +47,29 @@ defmodule ZenohexPico.Config do
           :mode
           | :connect
           | :listen
-          | :user
-          | :password
+          # Currently unused by Zenoh Pico.
+          # | :user
+          # | :password
           | :multicast_scouting
           | :multicast_locator
           | :scouting_timeout
           | :scouting_what
           | :session_zid
-          | :add_timestamp
-          | :tls_root_ca_certificate
-          | :tls_root_ca_certificate_base64
-          | :tls_listen_private_key
-          | :tls_listen_private_key_base64
-          | :tls_listen_certificate
-          | :tls_listen_certificate_base64
-          | :tls_enable_mtls
-          | :tls_connect_private_key
-          | :tls_connect_private_key_base64
-          | :tls_connect_certificate
-          | :tls_connect_certificate_base64
-          | :tls_verify_name_on_connect
+  # Currently unused by Zenoh Pico.
+  # | :add_timestamp
+  # TLS configuration requires Z_FEATURE_LINK_TLS=1.
+  # | :tls_root_ca_certificate
+  # | :tls_root_ca_certificate_base64
+  # | :tls_listen_private_key
+  # | :tls_listen_private_key_base64
+  # | :tls_listen_certificate
+  # | :tls_listen_certificate_base64
+  # | :tls_enable_mtls
+  # | :tls_connect_private_key
+  # | :tls_connect_private_key_base64
+  # | :tls_connect_certificate
+  # | :tls_connect_certificate_base64
+  # | :tls_verify_name_on_connect
 
   @doc """
   Returns the default Zenoh configuration.
