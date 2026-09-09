@@ -66,7 +66,7 @@ jobs:
         run: mix compile --warnings-as-errors
 
       - name: Run tests
-        run: mix test --warnings-as-errors
+        run: mix test --warnings-as-errors --cover
 
       - name: Check formatting
         run: mix format --check-formatted

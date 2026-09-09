@@ -63,6 +63,11 @@ defmodule ZenohexPico.MixProject do
       docs: [
         extras: ["README.md", "LICENSE"],
         main: "readme"
+      ],
+      test_coverage: [
+        ignore_modules: [
+          ZenohexPico.Nif
+        ]
       ]
     ]
   end
