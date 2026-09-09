@@ -10,14 +10,14 @@ defmodule ZenohexPico.SessionTest do
     assert {:ok, listen_session} = Session.open(listen_config)
     on_exit(fn -> Session.close(listen_session) end)
 
-    assert {:ok, session} = Session.open(connect_config)
-    assert :ok = Session.put(session, "zenohex_pico/session", "payload")
+    assert {:ok, connect_session} = Session.open(connect_config)
+    assert :ok = Session.put(connect_session, "zenohex_pico/session", "payload")
 
     assert {:error, :timeout} =
-             Session.get(session, "zenohex_pico/no_responder", 100, query_timeout: 10)
+             Session.get(connect_session, "zenohex_pico/no_responder", 100, query_timeout: 10)
 
-    assert :ok = Session.close(session)
-    assert {:error, :session_closed} = Session.close(session)
+    assert :ok = Session.close(connect_session)
+    assert {:error, :session_closed} = Session.close(connect_session)
   end
 
   defp peer_config(endpoint_key, endpoint) do
