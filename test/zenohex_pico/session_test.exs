@@ -4,8 +4,8 @@ defmodule ZenohexPico.SessionTest do
   alias ZenohexPico.{Config, Session}
 
   test "opens, publishes, queries, and closes" do
-    listen_config = peer_config(:listen, "tcp/127.0.0.1:7447")
-    connect_config = peer_config(:connect, "tcp/127.0.0.1:7447")
+    listen_config = peer_config(:listen, "tcp/localhost:7447")
+    connect_config = peer_config(:connect, "tcp/localhost:7447")
 
     assert {:ok, listen_session} = Session.open(listen_config)
     on_exit(fn -> Session.close(listen_session) end)

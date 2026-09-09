@@ -49,7 +49,7 @@ defmodule ZenohexPico.NifTest do
     setup do
       {:ok, config} = Nif.config_default()
       {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
-      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/127.0.0.1:7447")
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/localhost:7447")
 
       %{config: config}
     end
@@ -75,13 +75,13 @@ defmodule ZenohexPico.NifTest do
     setup do
       {:ok, config} = Nif.config_default()
       {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
-      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/127.0.0.1:7447")
+      {:ok, config} = Nif.config_insert(config, @z_config_listen_key, "tcp/localhost:7447")
       {:ok, listen_session} = Nif.session_open(config)
       on_exit(fn -> Nif.session_close(listen_session) end)
 
       {:ok, config} = Nif.config_default()
       {:ok, config} = Nif.config_insert(config, @z_config_mode_key, @z_config_mode_peer)
-      {:ok, config} = Nif.config_insert(config, @z_config_connect_key, "tcp/127.0.0.1:7447")
+      {:ok, config} = Nif.config_insert(config, @z_config_connect_key, "tcp/localhost:7447")
       {:ok, connect_session} = Nif.session_open(config)
       on_exit(fn -> Nif.session_close(connect_session) end)
 

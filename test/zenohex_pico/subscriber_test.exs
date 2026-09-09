@@ -36,7 +36,7 @@ defmodule ZenohexPico.SubscriberTest do
   defp peer_config(endpoint_kind, port) do
     {:ok, config} = Config.default()
     {:ok, config} = Config.insert(config, :mode, "peer")
-    {:ok, config} = Config.insert(config, endpoint_kind, "tcp/127.0.0.1:#{port}")
+    {:ok, config} = Config.insert(config, endpoint_kind, "tcp/localhost:#{port}")
     config
   end
 end
