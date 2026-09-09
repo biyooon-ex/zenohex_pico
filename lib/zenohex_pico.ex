@@ -6,8 +6,6 @@ defmodule ZenohexPico do
     - https://zenoh.io/
     - https://github.com/eclipse-zenoh/zenoh-pico
 
-  A Pico configuration must be supplied explicitly.
-
   For reusable connections, use `ZenohexPico.Session` directly.
   """
 

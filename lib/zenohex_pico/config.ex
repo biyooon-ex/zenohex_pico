@@ -4,6 +4,50 @@ defmodule ZenohexPico.Config do
 
   This module provides helpers to obtain default configuration
   and retrieve or update individual config keys.
+
+  ## Supported values
+
+  Configuration values are strings. The following keys are supported:
+
+  | Key | Accepted values | Config default | Examples |
+  | --- | --- | --- | --- |
+  | `:mode` | `"client"`, `"peer"` | `"client"` | `"peer"` |
+  | `:connect` | One or more locators | None | `"tcp/192.168.1.10:7447"` |
+  | `:listen` | A single locator; subsequent inserts replace it | None | `"tcp/0.0.0.0:7447"` |
+  | `:multicast_scouting` | `"true"`, `"false"` | `"true"` | `"false"` |
+  | `:multicast_locator` | A multicast UDP locator | `"udp/224.0.0.224:7446"` | `"udp/224.0.0.224:7446"` |
+  | `:scouting_timeout` | Integer milliseconds | `"1000"` | `"5000"` |
+  | `:scouting_what` | Bitmask from `0` to `7` | Not set (runtime: `"3"`) | `"7"` |
+  | `:session_zid` | A 128-bit UUID | None | `"01234567-89ab-cdef-0123-456789abcdef"` |
+
+  Multiple `:connect` locators are supported. Add each locator with a separate
+  call to `insert/3`:
+
+      {:ok, config} = ZenohexPico.Config.default()
+      {:ok, config} = ZenohexPico.Config.insert(config, :connect, "tcp/192.168.1.10:7447")
+      {:ok, config} = ZenohexPico.Config.insert(config, :connect, "tcp/192.168.1.20:7447")
+
+  `get/2` returns only the most recently configured `:connect` locator.
+  When opening a session, Zenoh Pico reads all configured `:connect` locators.
+  In client mode, it tries them from most recently configured to least recently
+  configured until one succeeds. In peer mode, it establishes a primary
+  transport, then adds the remaining locators as peers.
+
+  **For developers:** Only :connect supports multiple values. Zenoh Pico uses
+  the internal _z_config_get_all function to retrieve all configured locators,
+  but does not expose a public equivalent. Therefore, ZenohexPico does not provide
+  an API for retrieving all configured :connect locators; get/2 returns only one locator.
+
+  The `:scouting_what` bitmask uses `1` for routers, `2` for peers, and
+  `4` for clients. Combine values to discover multiple entity types; for
+  example, `"7"` discovers routers, peers, and clients.
+
+  `:scouting_timeout` applies only in client mode while scouting for a router.
+  `:session_zid` is optional; when it is unset, Zenoh Pico generates the
+  session ID.
+
+  Locator protocols depend on the Zenoh Pico features enabled at build time.
+  Common examples are `tcp/<address>:<port>` and `udp/<address>:<port>`.
   """
 
   @keys %{
@@ -80,6 +124,9 @@ defmodule ZenohexPico.Config do
   @doc """
   Returns the value of the configuration at `key`.
 
+  For `:connect`, which supports multiple values, returns only the most
+  recently configured locator.
+
   Raises `ArgumentError` when `key` is not supported.
 
   ## Examples
@@ -103,9 +150,9 @@ defmodule ZenohexPico.Config do
       iex> {:ok, config} = ZenohexPico.Config.default()
       iex> {:error, _value} = ZenohexPico.Config.get(config, :connect)
       {:error, :not_found}
-      iex> {:ok, config} = ZenohexPico.Config.insert(config, :connect, "tcp/127.0.0.1:7447")
+      iex> {:ok, config} = ZenohexPico.Config.insert(config, :connect, "tcp/localhost:7447")
       iex> {:ok, _value} = ZenohexPico.Config.get(config, :connect)
-      {:ok, "tcp/127.0.0.1:7447"}
+      {:ok, "tcp/localhost:7447"}
   """
   @spec insert(t(), key(), String.t()) :: {:ok, t()} | {:error, reason :: term()}
   def insert(config, key, value), do: ZenohexPico.Nif.config_insert(config, key_id!(key), value)

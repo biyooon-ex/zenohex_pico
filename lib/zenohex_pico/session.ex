@@ -5,8 +5,6 @@ defmodule ZenohexPico.Session do
   This module provides functions to open and close Zenoh sessions, publish
   and retrieve data, and declare subscribers.
 
-  Internally, all operations are forwarded to the native layer via NIFs.
-
   Typical usage starts with `open/1` to create a session,
   followed by operations such as `put/4`, `get/4`, or `declare_subscriber/4`.
 
