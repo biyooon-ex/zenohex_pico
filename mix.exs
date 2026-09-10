@@ -61,7 +61,7 @@ defmodule ZenohexPico.MixProject do
         plt_core_path: "priv/plts/core.plt"
       ],
       docs: [
-        extras: ["README.md", "LICENSE"],
+        extras: ["README.md", "LICENSE", "ZENOHEX_API_COMPATIBILITY.md"],
         main: "readme"
       ],
       test_coverage: [
