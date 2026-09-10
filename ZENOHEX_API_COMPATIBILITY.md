@@ -67,5 +67,5 @@ This table maps [Zenohex](https://github.com/biyooon-ex/zenohex) APIs to their Z
 ## Notable API differences
 
 - `Zenohex.Config.default/0` returns a JSON binary directly, whereas `ZenohexPico.Config.default/0` returns `{:ok, reference()}` on success (or `{:error, term()}`).
-- `ZenohexPico.Config.get/2` and `ZenohexPico.Config.insert/3` accept only supported atom keys. See the `ZenohexPico.Config` documentation for the list of supported keys. In contrast, `Zenohex.Config.get_json/2` and `Zenohex.Config.insert_json5/3` use string key paths and JSON5 values.
+- `ZenohexPico.Config.get/2` and `ZenohexPico.Config.insert/3` accept only supported atom keys. See the `ZenohexPico.Config` documentation for the list of supported keys. In contrast, `Zenohex.Config.get_json/2` and `Zenohex.Config.insert_json5/3` use string key paths.
 - `Zenohex.put/3` and `Zenohex.get/3` use the default configuration internally. Their `ZenohexPico` counterparts require a `ZenohexPico.Config.t()` as the first argument.
