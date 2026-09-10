@@ -58,8 +58,6 @@ iex()> {:ok, listen_session} = ZenohexPico.Session.open(listen_config)
 {:ok, #Reference<>}
 iex()> {:ok, connect_session} = ZenohexPico.Session.open(connect_config)
 {:ok, #Reference<>}
-iex()> ZenohexPico.Session.declare_subscriber(listen_session, "key/expr", self())
-{:ok, #Reference<>}
 iex()> {:ok, subscriber} = ZenohexPico.Session.declare_subscriber(listen_session, "key/expr", self())
 {:ok, #Reference<>}
 iex()> :ok = ZenohexPico.Session.put(connect_session, "key/expr", "payload")
