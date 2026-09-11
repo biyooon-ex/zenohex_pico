@@ -265,9 +265,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
 
   resource->is_mutex_initialized = true;
   z_take(&resource->session, z_move(session));
-  if (memory_ensure_free_with_roots(
-          ctx, TERM_BOXED_RESOURCE_SIZE + TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-      MEMORY_GC_OK)
+  if (memory_ensure_free(ctx, TERM_BOXED_RESOURCE_SIZE + TUPLE_SIZE(2)) != MEMORY_GC_OK)
   {
     enif_release_resource(resource);
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
@@ -297,8 +295,7 @@ term zxp_session_close(Context *ctx, int argc, term argv[])
     if (!z_internal_session_check(&resource->session))
     {
       pthread_mutex_unlock(&resource->mutex);
-      if (memory_ensure_free_with_roots(ctx, TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-          MEMORY_GC_OK)
+      if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
       {
         RAISE_ERROR(OUT_OF_MEMORY_ATOM);
       }
@@ -363,8 +360,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
       z_drop(z_move(payload));
       z_drop(z_move(keyexpr));
       zxp_session_put_options_drop(put_options);
-      if (memory_ensure_free_with_roots(ctx, TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-          MEMORY_GC_OK)
+      if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
       {
         RAISE_ERROR(OUT_OF_MEMORY_ATOM);
       }
@@ -474,8 +470,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
       zxp_session_get_context_release(context);
       z_drop(z_move(keyexpr));
       zxp_session_get_options_drop(get_options);
-      if (memory_ensure_free_with_roots(ctx, TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-          MEMORY_GC_OK)
+      if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
       {
         RAISE_ERROR(OUT_OF_MEMORY_ATOM);
       }
@@ -534,8 +529,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   {
     pthread_mutex_unlock(&context->mutex);
     zxp_session_get_context_release(context);
-    if (memory_ensure_free_with_roots(ctx, TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-        MEMORY_GC_OK)
+    if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
     {
       RAISE_ERROR(OUT_OF_MEMORY_ATOM);
     }
@@ -549,7 +543,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
                      ? zxp_sample_heap_size(&context->replies[index].value.sample)
                      : zxp_reply_error_heap_size(&context->replies[index].value.reply_error);
   }
-  if (memory_ensure_free_with_roots(ctx, heap_size, argc, argv, MEMORY_CAN_SHRINK) != MEMORY_GC_OK)
+  if (memory_ensure_free(ctx, heap_size) != MEMORY_GC_OK)
   {
     pthread_mutex_unlock(&context->mutex);
     zxp_session_get_context_release(context);

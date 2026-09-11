@@ -93,8 +93,7 @@ term zxp_config_get(Context *ctx, int argc, term argv[])
   const char *value = zp_config_get(z_loan(*config_p), (uint8_t)key);
   if (value == NULL)
   {
-    if (memory_ensure_free_with_roots(ctx, TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-        MEMORY_GC_OK)
+    if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
     {
       RAISE_ERROR(OUT_OF_MEMORY_ATOM);
     }
@@ -102,14 +101,21 @@ term zxp_config_get(Context *ctx, int argc, term argv[])
   }
 
   size_t len = strlen(value);
-  if (memory_ensure_free_with_roots(
-          ctx, term_binary_heap_size(len) + TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-      MEMORY_GC_OK)
+  char *value_copy = malloc(len);
+  if (len != 0 && value_copy == NULL)
   {
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
+  memcpy(value_copy, value, len);
 
-  term binary = zxp_binary_from_bytes(ctx, value, len);
+  if (memory_ensure_free(ctx, term_binary_heap_size(len) + TUPLE_SIZE(2)) != MEMORY_GC_OK)
+  {
+    free(value_copy);
+    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+  }
+
+  term binary = zxp_binary_from_bytes(ctx, value_copy, len);
+  free(value_copy);
 
   return zxp_avm_tuple2(ctx, OK_ATOM, binary);
 }
@@ -187,9 +193,7 @@ term zxp_config_insert(Context *ctx, int argc, term argv[])
     }
   }
 
-  if (memory_ensure_free_with_roots(
-          ctx, TERM_BOXED_RESOURCE_SIZE + TUPLE_SIZE(2), argc, argv, MEMORY_CAN_SHRINK) !=
-      MEMORY_GC_OK)
+  if (memory_ensure_free(ctx, TERM_BOXED_RESOURCE_SIZE + TUPLE_SIZE(2)) != MEMORY_GC_OK)
   {
     enif_release_resource(new_config_p);
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
