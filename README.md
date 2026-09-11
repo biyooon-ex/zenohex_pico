@@ -36,8 +36,8 @@ This step is necessary to prepare `AtomVM/build/libs`, which is used in the foll
 ```
 mkdir build
 cd build
-mise use erlang@27.3.4.15
-mise use elixir@1.18.3-otp-27
+mise use erlang@27.3.4.17
+mise use elixir@1.18.5-otp-27
 mix local.hex
 mix local.rebar
 export PATH="$MIX_HOME/elixir/1-18:$PATH"
