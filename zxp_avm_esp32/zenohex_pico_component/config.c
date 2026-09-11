@@ -65,7 +65,7 @@ term zxp_config_default(Context *ctx, int argc, term argv[])
   term config_ref = term_from_resource(config_p, &ctx->heap);
   enif_release_resource(config_p);
 
-  return zxp_avm_tuple2(ctx, OK_ATOM, config_ref);
+  return zxp_make_tuple2(ctx, OK_ATOM, config_ref);
 }
 
 term zxp_config_get(Context *ctx, int argc, term argv[])
@@ -97,7 +97,7 @@ term zxp_config_get(Context *ctx, int argc, term argv[])
     {
       RAISE_ERROR(OUT_OF_MEMORY_ATOM);
     }
-    return zxp_avm_tuple2(ctx, ERROR_ATOM, not_found_atom);
+    return zxp_make_tuple2(ctx, ERROR_ATOM, not_found_atom);
   }
 
   size_t len = strlen(value);
@@ -117,7 +117,7 @@ term zxp_config_get(Context *ctx, int argc, term argv[])
   term binary = zxp_binary_from_bytes(ctx, value_copy, len);
   free(value_copy);
 
-  return zxp_avm_tuple2(ctx, OK_ATOM, binary);
+  return zxp_make_tuple2(ctx, OK_ATOM, binary);
 }
 
 term zxp_config_insert(Context *ctx, int argc, term argv[])
@@ -202,5 +202,5 @@ term zxp_config_insert(Context *ctx, int argc, term argv[])
   term new_config_ref = term_from_resource(new_config_p, &ctx->heap);
   enif_release_resource(new_config_p);
 
-  return zxp_avm_tuple2(ctx, OK_ATOM, new_config_ref);
+  return zxp_make_tuple2(ctx, OK_ATOM, new_config_ref);
 }

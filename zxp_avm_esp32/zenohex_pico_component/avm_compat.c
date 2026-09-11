@@ -134,7 +134,7 @@ term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size)
   return term_from_literal_binary(data, size, &ctx->heap, ctx->global);
 }
 
-term zxp_avm_tuple2(Context *ctx, term first, term second)
+term zxp_make_tuple2(Context *ctx, term first, term second)
 {
   term result = term_alloc_tuple(2, &ctx->heap);
   term_put_tuple_element(result, 0, first);
@@ -159,5 +159,5 @@ term zxp_avm_error_tuple(Context *ctx, const char *reason)
   {
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
-  return zxp_avm_tuple2(ctx, ERROR_ATOM, zxp_binary_from_bytes(ctx, reason, reason_size));
+  return zxp_make_tuple2(ctx, ERROR_ATOM, zxp_binary_from_bytes(ctx, reason, reason_size));
 }

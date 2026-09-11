@@ -273,7 +273,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
 
   term session_ref = term_from_resource(resource, &ctx->heap);
   enif_release_resource(resource);
-  return zxp_avm_tuple2(ctx, OK_ATOM, session_ref);
+  return zxp_make_tuple2(ctx, OK_ATOM, session_ref);
 }
 
 term zxp_session_close(Context *ctx, int argc, term argv[])
@@ -299,7 +299,7 @@ term zxp_session_close(Context *ctx, int argc, term argv[])
       {
         RAISE_ERROR(OUT_OF_MEMORY_ATOM);
       }
-      return zxp_avm_tuple2(ctx, ERROR_ATOM, session_closed_atom);
+      return zxp_make_tuple2(ctx, ERROR_ATOM, session_closed_atom);
     }
 
     z_take(&session, z_move(resource->session));
@@ -364,7 +364,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
       {
         RAISE_ERROR(OUT_OF_MEMORY_ATOM);
       }
-      return zxp_avm_tuple2(ctx, ERROR_ATOM, session_closed_atom);
+      return zxp_make_tuple2(ctx, ERROR_ATOM, session_closed_atom);
     }
 
     ret = z_put(z_loan(resource->session),
@@ -474,7 +474,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
       {
         RAISE_ERROR(OUT_OF_MEMORY_ATOM);
       }
-      return zxp_avm_tuple2(ctx, ERROR_ATOM, session_closed_atom);
+      return zxp_make_tuple2(ctx, ERROR_ATOM, session_closed_atom);
     }
 
     if (!zxp_session_get_deadline(timeout_ms, &deadline))
@@ -533,7 +533,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     {
       RAISE_ERROR(OUT_OF_MEMORY_ATOM);
     }
-    return zxp_avm_tuple2(ctx, ERROR_ATOM, timeout_atom);
+    return zxp_make_tuple2(ctx, ERROR_ATOM, timeout_atom);
   }
 
   size_t heap_size = TUPLE_SIZE(2) + context->reply_count * CONS_SIZE;
@@ -558,7 +558,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
                                    : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
     replies = term_list_prepend(reply_term, replies, &ctx->heap);
   }
-  term response = zxp_avm_tuple2(ctx, OK_ATOM, replies);
+  term response = zxp_make_tuple2(ctx, OK_ATOM, replies);
   pthread_mutex_unlock(&context->mutex);
   zxp_session_get_context_release(context);
   return response;
