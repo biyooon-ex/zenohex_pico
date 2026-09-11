@@ -236,7 +236,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
   z_result_t ret = z_clone(&config, z_loan(*config_p));
   if (ret != Z_OK)
   {
-    return zxp_avm_error_tuple(ctx, "z_clone");
+    return zxp_error_tuple(ctx, "z_clone");
   }
 
   z_owned_session_t session;
@@ -244,7 +244,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
   ret = z_open(&session, z_move(config), NULL);
   if (ret != Z_OK)
   {
-    return zxp_avm_error_tuple(ctx, "z_open");
+    return zxp_error_tuple(ctx, "z_open");
   }
 
   zxp_session_resource_t *resource =
@@ -260,7 +260,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
   {
     z_drop(z_move(session));
     enif_release_resource(resource);
-    return zxp_avm_error_tuple(ctx, "pthread_mutex_init");
+    return zxp_error_tuple(ctx, "pthread_mutex_init");
   }
 
   resource->is_mutex_initialized = true;
@@ -338,7 +338,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   if (ret != Z_OK)
   {
     zxp_session_put_options_drop(put_options);
-    return zxp_avm_error_tuple(ctx, "z_keyexpr_from_substr");
+    return zxp_error_tuple(ctx, "z_keyexpr_from_substr");
   }
 
   z_owned_bytes_t payload;
@@ -349,7 +349,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   {
     z_drop(z_move(keyexpr));
     zxp_session_put_options_drop(put_options);
-    return zxp_avm_error_tuple(ctx, "z_bytes_copy_from_buf");
+    return zxp_error_tuple(ctx, "z_bytes_copy_from_buf");
   }
 
   pthread_mutex_lock(&resource->mutex);
@@ -377,7 +377,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   zxp_session_put_options_drop(put_options);
   if (ret != Z_OK)
   {
-    return zxp_avm_error_tuple(ctx, "z_put");
+    return zxp_error_tuple(ctx, "z_put");
   }
   return OK_ATOM;
 }
@@ -421,7 +421,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   if (ret != Z_OK)
   {
     zxp_session_get_options_drop(get_options);
-    return zxp_avm_error_tuple(ctx, "z_keyexpr_from_substr");
+    return zxp_error_tuple(ctx, "z_keyexpr_from_substr");
   }
 
   zxp_session_get_context_t *context = calloc(1, sizeof(*context));
@@ -436,7 +436,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_avm_error_tuple(ctx, "pthread_mutex_init");
+    return zxp_error_tuple(ctx, "pthread_mutex_init");
   }
   if (pthread_cond_init(&context->complete, NULL) != 0)
   {
@@ -444,7 +444,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_avm_error_tuple(ctx, "pthread_cond_init");
+    return zxp_error_tuple(ctx, "pthread_cond_init");
   }
   context->ref_count = 1;
 
@@ -456,7 +456,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     zxp_session_get_context_release(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_avm_error_tuple(ctx, "z_closure_reply");
+    return zxp_error_tuple(ctx, "z_closure_reply");
   }
   context->ref_count++;
 
@@ -484,7 +484,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
       zxp_session_get_context_release(context);
       z_drop(z_move(keyexpr));
       zxp_session_get_options_drop(get_options);
-      return zxp_avm_error_tuple(ctx, "session_get_deadline");
+      return zxp_error_tuple(ctx, "session_get_deadline");
     }
 
     ret = z_get_with_parameters_substr(z_loan(resource->session),
@@ -500,7 +500,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   if (ret != Z_OK)
   {
     zxp_session_get_context_release(context);
-    return zxp_avm_error_tuple(ctx, "z_get_with_parameters_substr");
+    return zxp_error_tuple(ctx, "z_get_with_parameters_substr");
   }
 
   pthread_mutex_lock(&context->mutex);
@@ -515,7 +515,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     {
       pthread_mutex_unlock(&context->mutex);
       zxp_session_get_context_release(context);
-      return zxp_avm_error_tuple(ctx, "pthread_cond_timedwait");
+      return zxp_error_tuple(ctx, "pthread_cond_timedwait");
     }
   }
 

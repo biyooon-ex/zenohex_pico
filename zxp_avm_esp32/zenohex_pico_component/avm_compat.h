@@ -73,6 +73,6 @@ extern void zxp_avm_init_atoms(GlobalContext *global);
 extern term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size);
 extern term zxp_make_tuple2(Context *ctx, term first, term second);
 term zxp_avm_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size);
-extern term zxp_avm_error_tuple(Context *ctx, const char *reason);
+extern term zxp_error_tuple(Context *ctx, const char *reason);
 
 #endif

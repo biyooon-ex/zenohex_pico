@@ -152,7 +152,7 @@ term zxp_avm_map_from_arrays(Context *ctx, const term keys[], const term values[
   return result;
 }
 
-term zxp_avm_error_tuple(Context *ctx, const char *reason)
+term zxp_error_tuple(Context *ctx, const char *reason)
 {
   size_t reason_size = strlen(reason);
   if (memory_ensure_free(ctx, term_binary_heap_size(reason_size) + TUPLE_SIZE(2)) != MEMORY_GC_OK)
