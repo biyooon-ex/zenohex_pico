@@ -104,5 +104,5 @@ term zxp_struct_from_zp_reply_err(Context *ctx, const zxp_reply_error_t *reply_e
       zxp_bytes_to_term(ctx, &reply_err->payload),
       zxp_bytes_to_term(ctx, &reply_err->encoding),
   };
-  return zxp_avm_map_from_arrays(ctx, keys, values, 3);
+  return zxp_map_from_arrays(ctx, keys, values, 3);
 }

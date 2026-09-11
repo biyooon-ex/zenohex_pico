@@ -219,5 +219,5 @@ term zxp_struct_from_zp_sample(Context *ctx, const zxp_sample_t *sample)
       zxp_binary_from_zp_timestamp(ctx, sample->has_timestamp ? &sample->timestamp : NULL),
   };
 
-  return zxp_avm_map_from_arrays(ctx, keys, values, 10);
+  return zxp_map_from_arrays(ctx, keys, values, 10);
 }

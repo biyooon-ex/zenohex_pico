@@ -142,7 +142,7 @@ term zxp_make_tuple2(Context *ctx, term first, term second)
   return result;
 }
 
-term zxp_avm_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size)
+term zxp_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size)
 {
   term result = term_alloc_map(size, &ctx->heap);
   for (size_t index = 0; index < size; index++)
