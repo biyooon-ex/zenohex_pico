@@ -8,18 +8,8 @@
 #include "sample.h"
 #include "timestamp.h"
 
-void zxp_sample_drop(zxp_sample_t *sample)
+static bool zxp_bytes_heap_size(const z_loaned_bytes_t *bytes, size_t *heap_size)
 {
-  free(sample->attachment.data);
-  free(sample->encoding.data);
-  free(sample->keyexpr.data);
-  free(sample->payload.data);
-}
-
-static bool zxp_owned_bytes_from_zp_bytes(zxp_bytes_t *destination, const z_loaned_bytes_t *bytes)
-{
-  destination->data = NULL;
-  destination->size = 0;
   if (bytes == NULL)
   {
     return true;
@@ -27,28 +17,17 @@ static bool zxp_owned_bytes_from_zp_bytes(zxp_bytes_t *destination, const z_loan
 
   z_owned_slice_t slice;
   z_internal_null(&slice);
+  if (z_bytes_to_slice(bytes, &slice) != Z_OK)
   {
-    z_result_t ret = z_bytes_to_slice(bytes, &slice);
-    if (ret != Z_OK)
-    {
-      return false;
-    }
+    return false;
   }
-  destination->size = z_slice_len(z_loan(slice));
-  destination->data = malloc(destination->size == 0 ? 1 : destination->size);
-  if (destination->data != NULL && destination->size != 0)
-  {
-    memcpy(destination->data, z_slice_data(z_loan(slice)), destination->size);
-  }
+  *heap_size += term_binary_heap_size(z_slice_len(z_loan(slice)));
   z_drop(z_move(slice));
-  return destination->data != NULL;
+  return true;
 }
 
-static bool zxp_owned_bytes_from_zp_encoding(zxp_bytes_t *destination,
-                                             const z_loaned_encoding_t *encoding)
+static bool zxp_encoding_heap_size(const z_loaned_encoding_t *encoding, size_t *heap_size)
 {
-  destination->data = NULL;
-  destination->size = 0;
   if (encoding == NULL)
   {
     return true;
@@ -56,85 +35,48 @@ static bool zxp_owned_bytes_from_zp_encoding(zxp_bytes_t *destination,
 
   z_owned_string_t string;
   z_internal_null(&string);
+  z_result_t ret = z_encoding_to_string(encoding, &string);
+  if (ret != Z_OK)
   {
-    z_result_t ret = z_encoding_to_string(encoding, &string);
-    if (ret != Z_OK)
-    {
-      return false;
-    }
+    return false;
   }
-  destination->size = z_string_len(z_loan(string));
-  destination->data = malloc(destination->size == 0 ? 1 : destination->size);
-  if (destination->data != NULL && destination->size != 0)
-  {
-    memcpy(destination->data, z_string_data(z_loan(string)), destination->size);
-  }
+  *heap_size += term_binary_heap_size(z_string_len(z_loan(string)));
   z_drop(z_move(string));
-  return destination->data != NULL;
+  return true;
 }
 
-static bool zxp_owned_bytes_from_zp_keyexpr(zxp_bytes_t *destination,
-                                            const z_loaned_keyexpr_t *keyexpr)
+static bool zxp_keyexpr_heap_size(const z_loaned_keyexpr_t *keyexpr, size_t *heap_size)
 {
-  destination->data = NULL;
-  destination->size = 0;
   z_view_string_t string;
+  if (z_keyexpr_as_view_string(keyexpr, &string) != Z_OK)
   {
-    z_result_t ret = z_keyexpr_as_view_string(keyexpr, &string);
-    if (ret != Z_OK)
-    {
-      return false;
-    }
+    return false;
   }
-  destination->size = z_string_len(z_loan(string));
-  destination->data = malloc(destination->size == 0 ? 1 : destination->size);
-  if (destination->data != NULL && destination->size != 0)
-  {
-    memcpy(destination->data, z_string_data(z_loan(string)), destination->size);
-  }
-  return destination->data != NULL;
+  *heap_size += term_binary_heap_size(z_string_len(z_loan(string)));
+  return true;
 }
 
-bool zxp_sample_from_zp_sample(zxp_sample_t *destination, const z_loaned_sample_t *sample)
+static bool zxp_timestamp_heap_size(const z_timestamp_t *timestamp, size_t *heap_size)
 {
-  memset(destination, 0, sizeof(*destination));
-  destination->congestion_control = z_sample_congestion_control(sample);
-  destination->express = z_sample_express(sample);
-  destination->kind = z_sample_kind(sample);
-  destination->priority = z_sample_priority(sample);
-  const z_timestamp_t *timestamp = z_sample_timestamp(sample);
   if (timestamp != NULL)
   {
-    destination->has_timestamp = true;
-    destination->timestamp = *timestamp;
-  }
-  if (!zxp_owned_bytes_from_zp_bytes(&destination->attachment, z_sample_attachment(sample)) ||
-      !zxp_owned_bytes_from_zp_encoding(&destination->encoding, z_sample_encoding(sample)) ||
-      !zxp_owned_bytes_from_zp_keyexpr(&destination->keyexpr, z_sample_keyexpr(sample)) ||
-      !zxp_owned_bytes_from_zp_bytes(&destination->payload, z_sample_payload(sample)))
-  {
-    zxp_sample_drop(destination);
-    return false;
+    *heap_size += term_binary_heap_size(63);
   }
   return true;
 }
 
-static size_t zxp_bytes_heap_size(const zxp_bytes_t *bytes)
+bool zxp_sample_heap_size(const z_loaned_sample_t *sample, size_t *heap_size)
 {
-  return bytes->data == NULL ? 0 : term_binary_heap_size(bytes->size);
-}
-
-size_t zxp_sample_heap_size(const zxp_sample_t *sample)
-{
-  return term_map_size_in_terms(10) + zxp_bytes_heap_size(&sample->attachment) +
-         zxp_bytes_heap_size(&sample->encoding) + zxp_bytes_heap_size(&sample->keyexpr) +
-         zxp_bytes_heap_size(&sample->payload) +
-         (sample->has_timestamp ? term_binary_heap_size(63) : 0);
-}
-
-static term zxp_bytes_to_term(Context *ctx, const zxp_bytes_t *bytes)
-{
-  return bytes->data == NULL ? nil_atom : zxp_binary_from_bytes(ctx, bytes->data, bytes->size);
+  *heap_size = term_map_size_in_terms(10);
+  if (!zxp_bytes_heap_size(z_sample_attachment(sample), heap_size) ||
+      !zxp_encoding_heap_size(z_sample_encoding(sample), heap_size) ||
+      !zxp_keyexpr_heap_size(z_sample_keyexpr(sample), heap_size) ||
+      !zxp_bytes_heap_size(z_sample_payload(sample), heap_size) ||
+      !zxp_timestamp_heap_size(z_sample_timestamp(sample), heap_size))
+  {
+    return false;
+  }
+  return true;
 }
 
 static term zxp_atom_from_zp_congestion_control(z_congestion_control_t congestion_control)
@@ -191,7 +133,63 @@ static term zxp_atom_from_zp_priority(z_priority_t priority)
   }
 }
 
-term zxp_struct_from_zp_sample(Context *ctx, const zxp_sample_t *sample)
+static term zxp_binary_from_zp_bytes(Context *ctx, const z_loaned_bytes_t *bytes)
+{
+  if (bytes == NULL)
+  {
+    return nil_atom;
+  }
+
+  z_owned_slice_t slice;
+  z_internal_null(&slice);
+  term term;
+  {
+    z_result_t ret = z_bytes_to_slice(bytes, &slice);
+    if (ret != Z_OK)
+    {
+      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+    }
+    term = zxp_binary_from_bytes(ctx, z_slice_data(z_loan(slice)), z_slice_len(z_loan(slice)));
+  }
+  z_drop(z_move(slice));
+  return term;
+}
+
+static term zxp_binary_from_zp_keyexpr(Context *ctx, const z_loaned_keyexpr_t *keyexpr)
+{
+  z_view_string_t string;
+  term term;
+  {
+    z_result_t ret = z_keyexpr_as_view_string(keyexpr, &string);
+    if (ret != Z_OK)
+    {
+      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+    }
+
+    term = zxp_binary_from_bytes(ctx, z_string_data(z_loan(string)), z_string_len(z_loan(string)));
+  }
+  return term;
+}
+
+static term zxp_binary_from_zp_encoding(Context *ctx, const z_loaned_encoding_t *encoding)
+{
+  z_owned_string_t string;
+  z_internal_null(&string);
+  term term;
+  {
+    z_result_t ret = z_encoding_to_string(encoding, &string);
+    if (ret != Z_OK)
+    {
+      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+    }
+
+    term = zxp_binary_from_bytes(ctx, z_string_data(z_loan(string)), z_string_len(z_loan(string)));
+  }
+  z_drop(z_move(string));
+  return term;
+}
+
+term zxp_struct_from_zp_sample(Context *ctx, const z_loaned_sample_t *sample)
 {
   term keys[] = {
       struct_atom,
@@ -208,16 +206,26 @@ term zxp_struct_from_zp_sample(Context *ctx, const zxp_sample_t *sample)
 
   term values[] = {
       sample_module,
-      zxp_bytes_to_term(ctx, &sample->attachment),
-      zxp_atom_from_zp_congestion_control(sample->congestion_control),
-      zxp_bytes_to_term(ctx, &sample->encoding),
-      zxp_atom_from_zp_express(sample->express),
-      zxp_bytes_to_term(ctx, &sample->keyexpr),
-      zxp_atom_from_zp_sample_kind(sample->kind),
-      zxp_bytes_to_term(ctx, &sample->payload),
-      zxp_atom_from_zp_priority(sample->priority),
-      zxp_binary_from_zp_timestamp(ctx, sample->has_timestamp ? &sample->timestamp : NULL),
+      zxp_binary_from_zp_bytes(ctx, z_sample_attachment(sample)),
+      zxp_atom_from_zp_congestion_control(z_sample_congestion_control(sample)),
+      zxp_binary_from_zp_encoding(ctx, z_sample_encoding(sample)),
+      zxp_atom_from_zp_express(z_sample_express(sample)),
+      zxp_binary_from_zp_keyexpr(ctx, z_sample_keyexpr(sample)),
+      zxp_atom_from_zp_sample_kind(z_sample_kind(sample)),
+      zxp_binary_from_zp_bytes(ctx, z_sample_payload(sample)),
+      zxp_atom_from_zp_priority(z_sample_priority(sample)),
+      zxp_binary_from_zp_timestamp(ctx, z_sample_timestamp(sample)),
   };
 
-  return zxp_map_from_arrays(ctx, keys, values, 10);
+  for (size_t index = 0; index < 10; index++)
+  {
+    if (term_is_invalid_term(values[index]))
+    {
+      return term_invalid_term();
+    }
+  }
+
+  term term;
+  term = zxp_map_from_arrays(ctx, keys, values, 10);
+  return term;
 }

@@ -3,8 +3,13 @@
 
 #include <nifs.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#include "sample.h"
+typedef struct
+{
+  uint8_t *data;
+  size_t size;
+} zxp_bytes_t;
 
 typedef struct
 {

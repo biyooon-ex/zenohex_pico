@@ -32,7 +32,7 @@ typedef struct
   bool is_ok;
   union
   {
-    zxp_sample_t sample;
+    z_owned_sample_t sample;
     zxp_reply_error_t reply_error;
   } value;
 } zxp_session_reply_t;
@@ -66,7 +66,7 @@ static void zxp_session_get_context_release(zxp_session_get_context_t *context)
     {
       if (context->replies[index].is_ok)
       {
-        zxp_sample_drop(&context->replies[index].value.sample);
+        z_drop(z_move(context->replies[index].value.sample));
       }
       else
       {
@@ -108,10 +108,17 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
 
     zxp_session_reply_t *destination = &context->replies[context->reply_count];
     destination->is_ok = z_reply_is_ok(reply);
-    bool copied = destination->is_ok
-                      ? zxp_sample_from_zp_sample(&destination->value.sample, z_reply_ok(reply))
-                      : zxp_reply_error_from_zp_reply_err(&destination->value.reply_error,
-                                                          z_reply_err(reply));
+    bool copied;
+    if (destination->is_ok)
+    {
+      z_internal_null(&destination->value.sample);
+      copied = z_clone(&destination->value.sample, z_reply_ok(reply)) == Z_OK;
+    }
+    else
+    {
+      copied =
+          zxp_reply_error_from_zp_reply_err(&destination->value.reply_error, z_reply_err(reply));
+    }
     if (!copied)
     {
       context->has_allocation_error = true;
@@ -539,9 +546,21 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   size_t heap_size = TUPLE_SIZE(2) + context->reply_count * CONS_SIZE;
   for (size_t index = 0; index < context->reply_count; index++)
   {
-    heap_size += context->replies[index].is_ok
-                     ? zxp_sample_heap_size(&context->replies[index].value.sample)
-                     : zxp_reply_error_heap_size(&context->replies[index].value.reply_error);
+    if (context->replies[index].is_ok)
+    {
+      size_t sample_heap_size;
+      if (!zxp_sample_heap_size(z_loan(context->replies[index].value.sample), &sample_heap_size))
+      {
+        pthread_mutex_unlock(&context->mutex);
+        zxp_session_get_context_release(context);
+        RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+      }
+      heap_size += sample_heap_size;
+    }
+    else
+    {
+      heap_size += zxp_reply_error_heap_size(&context->replies[index].value.reply_error);
+    }
   }
   if (memory_ensure_free(ctx, heap_size) != MEMORY_GC_OK)
   {
@@ -554,8 +573,14 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   for (size_t index = context->reply_count; index > 0; index--)
   {
     zxp_session_reply_t *reply = &context->replies[index - 1];
-    term reply_term = reply->is_ok ? zxp_struct_from_zp_sample(ctx, &reply->value.sample)
+    term reply_term = reply->is_ok ? zxp_struct_from_zp_sample(ctx, z_loan(reply->value.sample))
                                    : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
+    if (term_is_invalid_term(reply_term))
+    {
+      pthread_mutex_unlock(&context->mutex);
+      zxp_session_get_context_release(context);
+      return term_invalid_term();
+    }
     replies = term_list_prepend(reply_term, replies, &ctx->heap);
   }
   term response = zxp_make_tuple2(ctx, OK_ATOM, replies);
