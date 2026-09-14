@@ -82,7 +82,8 @@ defmodule ZenohexPico.MixProject do
       ],
       test_coverage: [
         ignore_modules: [
-          ZenohexPico.Nif
+          ZenohexPico.Nif,
+          ZenohexPico.AvmEsp32.Test
         ]
       ]
     ]
