@@ -64,69 +64,69 @@ term data_atom;
 term data_low_atom;
 term background_atom;
 
-#define ZXP_ATOM(global, size, name) globalcontext_make_atom(global, ATOM_STR(size, name))
 
-void zxp_avm_init_atoms(GlobalContext *global)
+void zxp_init_atom(GlobalContext *global)
 {
   // Primitive.
-  nil_atom = ZXP_ATOM(global, "\x3", "nil");
-  not_found_atom = ZXP_ATOM(global, "\x9", "not_found");
-  timeout_atom = ZXP_ATOM(global, "\x7", "timeout");
-  session_closed_atom = ZXP_ATOM(global, "\xE", "session_closed");
-  struct_atom = ZXP_ATOM(global, "\xA", "__struct__");
+  nil_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "nil"));
+  not_found_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "not_found"));
+  timeout_atom = globalcontext_make_atom(global, ATOM_STR("\x7", "timeout"));
+  session_closed_atom = globalcontext_make_atom(global, ATOM_STR("\xE", "session_closed"));
+  struct_atom = globalcontext_make_atom(global, ATOM_STR("\xA", "__struct__"));
 
   // Sample fields.
-  payload_atom = ZXP_ATOM(global, "\x7", "payload");
-  encoding_atom = ZXP_ATOM(global, "\x8", "encoding");
-  attachment_atom = ZXP_ATOM(global, "\xA", "attachment");
-  express_atom = ZXP_ATOM(global, "\x7", "express");
-  key_expr_atom = ZXP_ATOM(global, "\x8", "key_expr");
-  timestamp_atom = ZXP_ATOM(global, "\x9", "timestamp");
+  payload_atom = globalcontext_make_atom(global, ATOM_STR("\x7", "payload"));
+  encoding_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "encoding"));
+  attachment_atom = globalcontext_make_atom(global, ATOM_STR("\xA", "attachment"));
+  express_atom = globalcontext_make_atom(global, ATOM_STR("\x7", "express"));
+  key_expr_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "key_expr"));
+  timestamp_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "timestamp"));
 
   // Query options.
-  query_timeout_atom = ZXP_ATOM(global, "\xD", "query_timeout");
-  accept_replies_atom = ZXP_ATOM(global, "\xE", "accept_replies");
-  consolidation_atom = ZXP_ATOM(global, "\xD", "consolidation");
-  target_atom = ZXP_ATOM(global, "\x6", "target");
+  query_timeout_atom = globalcontext_make_atom(global, ATOM_STR("\xD", "query_timeout"));
+  accept_replies_atom = globalcontext_make_atom(global, ATOM_STR("\xE", "accept_replies"));
+  consolidation_atom = globalcontext_make_atom(global, ATOM_STR("\xD", "consolidation"));
+  target_atom = globalcontext_make_atom(global, ATOM_STR("\x6", "target"));
 
   // Sample kind.
-  kind_atom = ZXP_ATOM(global, "\x4", "kind");
-  delete_atom = ZXP_ATOM(global, "\x6", "delete");
-  put_atom = ZXP_ATOM(global, "\x3", "put");
+  kind_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "kind"));
+  delete_atom = globalcontext_make_atom(global, ATOM_STR("\x6", "delete"));
+  put_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "put"));
 
   // Modules.
-  sample_module = ZXP_ATOM(global, "\x19", "Elixir.ZenohexPico.Sample");
-  reply_error_module = ZXP_ATOM(global, "\x23", "Elixir.ZenohexPico.Query.ReplyError");
+  sample_module = globalcontext_make_atom(global, ATOM_STR("\x19", "Elixir.ZenohexPico.Sample"));
+  reply_error_module =
+      globalcontext_make_atom(global, ATOM_STR("\x23", "Elixir.ZenohexPico.Query.ReplyError"));
 
   // Congestion control.
-  congestion_control_atom = ZXP_ATOM(global, "\x12", "congestion_control");
-  block_atom = ZXP_ATOM(global, "\x5", "block");
-  drop_atom = ZXP_ATOM(global, "\x4", "drop");
+  congestion_control_atom = globalcontext_make_atom(global, ATOM_STR("\x12", "congestion_control"));
+  block_atom = globalcontext_make_atom(global, ATOM_STR("\x5", "block"));
+  drop_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "drop"));
 
   // Consolidation.
-  auto_atom = ZXP_ATOM(global, "\x4", "auto");
-  none_atom = ZXP_ATOM(global, "\x4", "none");
-  monotonic_atom = ZXP_ATOM(global, "\x9", "monotonic");
-  latest_atom = ZXP_ATOM(global, "\x6", "latest");
+  auto_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "auto"));
+  none_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "none"));
+  monotonic_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "monotonic"));
+  latest_atom = globalcontext_make_atom(global, ATOM_STR("\x6", "latest"));
 
   // Query target.
-  best_matching_atom = ZXP_ATOM(global, "\xD", "best_matching");
-  all_atom = ZXP_ATOM(global, "\x3", "all");
-  all_complete_atom = ZXP_ATOM(global, "\xC", "all_complete");
+  best_matching_atom = globalcontext_make_atom(global, ATOM_STR("\xD", "best_matching"));
+  all_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "all"));
+  all_complete_atom = globalcontext_make_atom(global, ATOM_STR("\xC", "all_complete"));
 
   // Accepted replies.
-  matching_query_atom = ZXP_ATOM(global, "\xE", "matching_query");
-  any_atom = ZXP_ATOM(global, "\x3", "any");
+  matching_query_atom = globalcontext_make_atom(global, ATOM_STR("\xE", "matching_query"));
+  any_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "any"));
 
   // Priority.
-  priority_atom = ZXP_ATOM(global, "\x8", "priority");
-  real_time_atom = ZXP_ATOM(global, "\x9", "real_time");
-  interactive_high_atom = ZXP_ATOM(global, "\x10", "interactive_high");
-  interactive_low_atom = ZXP_ATOM(global, "\xF", "interactive_low");
-  data_high_atom = ZXP_ATOM(global, "\x9", "data_high");
-  data_atom = ZXP_ATOM(global, "\x4", "data");
-  data_low_atom = ZXP_ATOM(global, "\x8", "data_low");
-  background_atom = ZXP_ATOM(global, "\xA", "background");
+  priority_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "priority"));
+  real_time_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "real_time"));
+  interactive_high_atom = globalcontext_make_atom(global, ATOM_STR("\x10", "interactive_high"));
+  interactive_low_atom = globalcontext_make_atom(global, ATOM_STR("\xF", "interactive_low"));
+  data_high_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "data_high"));
+  data_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "data"));
+  data_low_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "data_low"));
+  background_atom = globalcontext_make_atom(global, ATOM_STR("\xA", "background"));
 }
 
 term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size)
