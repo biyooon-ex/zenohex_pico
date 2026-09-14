@@ -62,6 +62,11 @@ static const struct Nif session_get_nif = {
     .nif_ptr = zxp_session_get,
 };
 
+static const struct Nif test_raise_nif = {
+    .base.type = NIFFunctionType,
+    .nif_ptr = zxp_test_raise,
+};
+
 // Resolves NIF names to their function descriptors.
 const struct Nif *zenohex_pico_get_nif(const char *nifname)
 {
@@ -99,6 +104,11 @@ const struct Nif *zenohex_pico_get_nif(const char *nifname)
       strcmp("Elixir.ZenohexPico.Nif:session_get/4", nifname) == 0)
   {
     return &session_get_nif;
+  }
+  if (strcmp("zenohex_pico_nif:test_raise/0", nifname) == 0 ||
+      strcmp("Elixir.ZenohexPico.Nif:test_raise/0", nifname) == 0)
+  {
+    return &test_raise_nif;
   }
   return NULL;
 }

@@ -74,5 +74,6 @@ extern term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size);
 extern term zxp_make_tuple2(Context *ctx, term first, term second);
 term zxp_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size);
 extern term zxp_error_tuple(Context *ctx, const char *reason);
+extern term zxp_test_raise(Context *ctx, int argc, term argv[]);
 
 #endif

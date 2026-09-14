@@ -64,6 +64,17 @@ term data_atom;
 term data_low_atom;
 term background_atom;
 
+static term zxp_error_binary(Context *ctx, const char *reason)
+{
+  size_t reason_size = strlen(reason);
+
+  if (UNLIKELY(memory_ensure_free(ctx, term_binary_heap_size(reason_size)) != MEMORY_GC_OK))
+  {
+    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+  }
+
+  return term_from_literal_binary(reason, reason_size, &ctx->heap, ctx->global);
+}
 
 void zxp_init_atom(GlobalContext *global)
 {
@@ -129,6 +140,11 @@ void zxp_init_atom(GlobalContext *global)
   background_atom = globalcontext_make_atom(global, ATOM_STR("\xA", "background"));
 }
 
+term zxp_raise(Context *ctx, const char *reason)
+{
+  RAISE_ERROR(zxp_error_binary(ctx, reason));
+}
+
 term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size)
 {
   return term_from_literal_binary(data, size, &ctx->heap, ctx->global);
@@ -160,4 +176,12 @@ term zxp_error_tuple(Context *ctx, const char *reason)
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
   return zxp_make_tuple2(ctx, ERROR_ATOM, zxp_binary_from_bytes(ctx, reason, reason_size));
+}
+
+term zxp_test_raise(Context *ctx, int argc, term argv[])
+{
+  UNUSED(argc);
+  UNUSED(argv);
+
+  return zxp_raise(ctx, "raise");
 }
