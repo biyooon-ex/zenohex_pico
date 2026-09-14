@@ -17,6 +17,9 @@
 #include "sample.h"
 #include "session.h"
 #include "session_option.h"
+#include "time_compat.h"
+
+#define ZXP_SESSION_GET_INITIAL_REPLY_CAPACITY 4
 
 ErlNifResourceType *zxp_session_resource_type = NULL;
 
@@ -29,7 +32,7 @@ typedef struct
 
 typedef struct
 {
-  bool is_ok;
+  bool is_sample;
   union
   {
     z_owned_sample_t sample;
@@ -64,7 +67,7 @@ static void zxp_session_get_context_release(zxp_session_get_context_t *context)
   {
     for (size_t index = 0; index < context->reply_count; index++)
     {
-      if (context->replies[index].is_ok)
+      if (context->replies[index].is_sample)
       {
         z_drop(z_move(context->replies[index].value.sample));
       }
@@ -94,7 +97,8 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
 
     if (context->reply_count == context->reply_capacity)
     {
-      size_t capacity = context->reply_capacity == 0 ? 4 : context->reply_capacity * 2;
+      size_t capacity = context->reply_capacity == 0 ? ZXP_SESSION_GET_INITIAL_REPLY_CAPACITY
+                                                     : context->reply_capacity * 2;
       zxp_session_reply_t *replies = realloc(context->replies, capacity * sizeof(*replies));
       if (replies == NULL)
       {
@@ -107,9 +111,9 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
     }
 
     zxp_session_reply_t *destination = &context->replies[context->reply_count];
-    destination->is_ok = z_reply_is_ok(reply);
+    destination->is_sample = z_reply_is_ok(reply);
     bool copied;
-    if (destination->is_ok)
+    if (destination->is_sample)
     {
       z_internal_null(&destination->value.sample);
       copied = z_clone(&destination->value.sample, z_reply_ok(reply)) == Z_OK;
@@ -134,7 +138,6 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
 static void zxp_session_get_drop_cb(void *arg)
 {
   zxp_session_get_context_t *context = arg;
-
   pthread_mutex_lock(&context->mutex);
   {
     context->is_z_get_complete = true;
@@ -146,44 +149,35 @@ static void zxp_session_get_drop_cb(void *arg)
 
 static bool zxp_session_get_deadline(uint64_t timeout_ms, struct timespec *deadline)
 {
-  if (clock_gettime(CLOCK_MONOTONIC, deadline) != 0)
+  if (clock_gettime(CLOCK_MONOTONIC, deadline) != 0 || deadline->tv_sec < 0)
   {
     return false;
   }
-  deadline->tv_sec += (time_t)(timeout_ms / 1000);
-  deadline->tv_nsec += (long)((timeout_ms % 1000) * 1000000);
-  if (deadline->tv_nsec >= 1000000000L)
-  {
-    deadline->tv_sec++;
-    deadline->tv_nsec -= 1000000000L;
-  }
-  return true;
-}
 
-static int zxp_session_get_timedwait(zxp_session_get_context_t *context,
-                                     const struct timespec *monotonic_deadline)
-{
-  struct timespec monotonic_now, realtime_now, realtime_deadline;
-  if (clock_gettime(CLOCK_MONOTONIC, &monotonic_now) != 0 ||
-      clock_gettime(CLOCK_REALTIME, &realtime_now) != 0)
+  uint64_t timeout_seconds = timeout_ms / 1000;
+  long deadline_nanoseconds = deadline->tv_nsec + (long)((timeout_ms % 1000) * 1000000);
+  if (deadline_nanoseconds >= 1000000000L)
   {
-    return EINVAL;
+    timeout_seconds++;
+    deadline_nanoseconds -= 1000000000L;
   }
-  int64_t remaining_ns =
-      ((int64_t)monotonic_deadline->tv_sec - monotonic_now.tv_sec) * 1000000000LL +
-      ((int64_t)monotonic_deadline->tv_nsec - monotonic_now.tv_nsec);
-  if (remaining_ns <= 0)
+
+  uint64_t current_seconds = (uint64_t)deadline->tv_sec;
+  if ((time_t)current_seconds != deadline->tv_sec || timeout_seconds > UINT64_MAX - current_seconds)
   {
-    return ETIMEDOUT;
+    return false;
   }
-  realtime_deadline.tv_sec = realtime_now.tv_sec + remaining_ns / 1000000000LL;
-  realtime_deadline.tv_nsec = realtime_now.tv_nsec + remaining_ns % 1000000000LL;
-  if (realtime_deadline.tv_nsec >= 1000000000L)
+
+  uint64_t deadline_seconds = current_seconds + timeout_seconds;
+  time_t converted_deadline_seconds = (time_t)deadline_seconds;
+  if ((uint64_t)converted_deadline_seconds != deadline_seconds)
   {
-    realtime_deadline.tv_sec++;
-    realtime_deadline.tv_nsec -= 1000000000L;
+    return false;
   }
-  return pthread_cond_timedwait(&context->complete, &context->mutex, &realtime_deadline);
+
+  deadline->tv_sec = converted_deadline_seconds;
+  deadline->tv_nsec = deadline_nanoseconds;
+  return true;
 }
 
 static void zxp_session_dtor(ErlNifEnv *env, void *obj)
@@ -240,18 +234,24 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
 
   z_owned_config_t config;
   z_internal_null(&config);
-  z_result_t ret = z_clone(&config, z_loan(*config_p));
-  if (ret != Z_OK)
   {
-    return zxp_error_tuple(ctx, "z_clone");
+    z_result_t ret = z_clone(&config, z_loan(*config_p));
+
+    if (ret != Z_OK)
+    {
+      return zxp_error_tuple(ctx, "z_clone");
+    }
   }
 
   z_owned_session_t session;
   z_internal_null(&session);
-  ret = z_open(&session, z_move(config), NULL);
-  if (ret != Z_OK)
   {
-    return zxp_error_tuple(ctx, "z_open");
+    z_result_t ret = z_open(&session, z_move(config), NULL);
+
+    if (ret != Z_OK)
+    {
+      return zxp_error_tuple(ctx, "z_open");
+    }
   }
 
   zxp_session_resource_t *resource =
@@ -261,6 +261,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
     z_drop(z_move(session));
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
+
   z_internal_null(&resource->session);
   resource->is_mutex_initialized = false;
   if (pthread_mutex_init(&resource->mutex, NULL) != 0)
@@ -280,6 +281,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
 
   term session_ref = term_from_resource(resource, &ctx->heap);
   enif_release_resource(resource);
+
   return zxp_make_tuple2(ctx, OK_ATOM, session_ref);
 }
 
@@ -313,7 +315,9 @@ term zxp_session_close(Context *ctx, int argc, term argv[])
   }
   pthread_mutex_unlock(&resource->mutex);
 
+  // Release session-owned transports now because the NIF resource destructor is GC-driven.
   z_drop(z_move(session));
+
   return OK_ATOM;
 }
 
@@ -386,6 +390,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   {
     return zxp_error_tuple(ctx, "z_put");
   }
+
   return OK_ATOM;
 }
 
@@ -393,8 +398,15 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
 {
   ErlNifEnv *env = erl_nif_env_from_context(ctx);
   zxp_session_resource_t *resource = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource) ||
-      !term_is_binary(argv[1]) || !term_is_uint64(argv[2]))
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
+  {
+    RAISE_ERROR(BADARG_ATOM);
+  }
+  if (!term_is_binary(argv[1]))
+  {
+    RAISE_ERROR(BADARG_ATOM);
+  }
+  if (!term_is_uint64(argv[2]))
   {
     RAISE_ERROR(BADARG_ATOM);
   }
@@ -420,7 +432,6 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   size_t keyexpr_length =
       query_separator == NULL ? selector_length : (size_t)(query_separator - selector);
   size_t parameters_length = query_separator == NULL ? 0 : selector_length - keyexpr_length - 1;
-  const char *parameters = query_separator == NULL ? NULL : query_separator + 1;
 
   z_owned_keyexpr_t keyexpr;
   z_internal_null(&keyexpr);
@@ -431,13 +442,17 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     return zxp_error_tuple(ctx, "z_keyexpr_from_substr");
   }
 
-  zxp_session_get_context_t *context = calloc(1, sizeof(*context));
+  const char *parameters = query_separator == NULL ? NULL : query_separator + 1;
+
+  zxp_session_get_context_t *context = malloc(sizeof(*context));
   if (context == NULL)
   {
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
+
+  memset(context, 0, sizeof(*context));
   if (pthread_mutex_init(&context->mutex, NULL) != 0)
   {
     free(context);
@@ -513,7 +528,12 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   pthread_mutex_lock(&context->mutex);
   while (!context->is_z_get_complete)
   {
-    int wait_result = zxp_session_get_timedwait(context, &deadline);
+    struct timespec realtime_deadline;
+    int wait_result = zxp_monotonic_to_realtime_deadline(&deadline, &realtime_deadline);
+    if (wait_result == 0)
+    {
+      wait_result = pthread_cond_timedwait(&context->complete, &context->mutex, &realtime_deadline);
+    }
     if (wait_result == ETIMEDOUT)
     {
       break;
@@ -546,7 +566,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   size_t heap_size = TUPLE_SIZE(2) + context->reply_count * CONS_SIZE;
   for (size_t index = 0; index < context->reply_count; index++)
   {
-    if (context->replies[index].is_ok)
+    if (context->replies[index].is_sample)
     {
       size_t sample_heap_size;
       if (!zxp_sample_heap_size(z_loan(context->replies[index].value.sample), &sample_heap_size))
@@ -573,8 +593,9 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   for (size_t index = context->reply_count; index > 0; index--)
   {
     zxp_session_reply_t *reply = &context->replies[index - 1];
-    term reply_term = reply->is_ok ? zxp_struct_from_zp_sample(ctx, z_loan(reply->value.sample))
-                                   : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
+    term reply_term = reply->is_sample
+                          ? zxp_struct_from_zp_sample(ctx, z_loan(reply->value.sample))
+                          : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
     if (term_is_invalid_term(reply_term))
     {
       pthread_mutex_unlock(&context->mutex);

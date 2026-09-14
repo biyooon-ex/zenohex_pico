@@ -4,6 +4,7 @@
 #include <nifs.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <zenoh-pico.h>
 
 typedef struct
 {
