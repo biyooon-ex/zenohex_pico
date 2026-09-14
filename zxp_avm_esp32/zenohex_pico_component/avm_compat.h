@@ -3,6 +3,7 @@
 
 #include <nifs.h>
 #include <stddef.h>
+#include <zenoh-pico.h>
 
 // Primitive.
 extern term nil_atom;
@@ -70,9 +71,11 @@ static inline term zxp_avm_empty_list(void)
 }
 
 extern void zxp_init_atom(GlobalContext *global);
+extern term zxp_raise(Context *ctx, const char *reason);
 extern term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size);
 extern term zxp_make_tuple2(Context *ctx, term first, term second);
 term zxp_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size);
+extern term zxp_error_tuple_zp(Context *ctx, z_result_t ret);
 extern term zxp_error_tuple(Context *ctx, const char *reason);
 extern term zxp_test_raise(Context *ctx, int argc, term argv[]);
 

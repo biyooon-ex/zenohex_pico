@@ -239,7 +239,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
 
     if (ret != Z_OK)
     {
-      return zxp_error_tuple(ctx, "z_clone");
+      return zxp_error_tuple_zp(ctx, ret);
     }
   }
 
@@ -250,7 +250,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
 
     if (ret != Z_OK)
     {
-      return zxp_error_tuple(ctx, "z_open");
+      return zxp_error_tuple_zp(ctx, ret);
     }
   }
 
@@ -268,7 +268,7 @@ term zxp_session_open(Context *ctx, int argc, term argv[])
   {
     z_drop(z_move(session));
     enif_release_resource(resource);
-    return zxp_error_tuple(ctx, "pthread_mutex_init");
+    return zxp_raise(ctx, "pthread_mutex_init/2 failed");
   }
 
   resource->is_mutex_initialized = true;
@@ -349,7 +349,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   if (ret != Z_OK)
   {
     zxp_session_put_options_drop(put_options);
-    return zxp_error_tuple(ctx, "z_keyexpr_from_substr");
+    return zxp_error_tuple_zp(ctx, ret);
   }
 
   z_owned_bytes_t payload;
@@ -360,7 +360,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   {
     z_drop(z_move(keyexpr));
     zxp_session_put_options_drop(put_options);
-    return zxp_error_tuple(ctx, "z_bytes_copy_from_buf");
+    return zxp_error_tuple_zp(ctx, ret);
   }
 
   pthread_mutex_lock(&resource->mutex);
@@ -388,7 +388,7 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   zxp_session_put_options_drop(put_options);
   if (ret != Z_OK)
   {
-    return zxp_error_tuple(ctx, "z_put");
+    return zxp_error_tuple_zp(ctx, ret);
   }
 
   return OK_ATOM;
@@ -439,7 +439,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   if (ret != Z_OK)
   {
     zxp_session_get_options_drop(get_options);
-    return zxp_error_tuple(ctx, "z_keyexpr_from_substr");
+    return zxp_error_tuple_zp(ctx, ret);
   }
 
   const char *parameters = query_separator == NULL ? NULL : query_separator + 1;
@@ -458,7 +458,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_error_tuple(ctx, "pthread_mutex_init");
+    return zxp_raise(ctx, "pthread_mutex_init/2 failed");
   }
   if (pthread_cond_init(&context->complete, NULL) != 0)
   {
@@ -466,7 +466,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_error_tuple(ctx, "pthread_cond_init");
+    return zxp_raise(ctx, "pthread_cond_init/2 failed");
   }
   context->ref_count = 1;
 
@@ -478,7 +478,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     zxp_session_get_context_release(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
-    return zxp_error_tuple(ctx, "z_closure_reply");
+    return zxp_error_tuple_zp(ctx, ret);
   }
   context->ref_count++;
 
@@ -506,7 +506,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
       zxp_session_get_context_release(context);
       z_drop(z_move(keyexpr));
       zxp_session_get_options_drop(get_options);
-      return zxp_error_tuple(ctx, "session_get_deadline");
+      return zxp_raise(ctx, "failed to calculate session get deadline");
     }
 
     ret = z_get_with_parameters_substr(z_loan(resource->session),
@@ -522,7 +522,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   if (ret != Z_OK)
   {
     zxp_session_get_context_release(context);
-    return zxp_error_tuple(ctx, "z_get_with_parameters_substr");
+    return zxp_error_tuple_zp(ctx, ret);
   }
 
   pthread_mutex_lock(&context->mutex);
@@ -542,7 +542,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     {
       pthread_mutex_unlock(&context->mutex);
       zxp_session_get_context_release(context);
-      return zxp_error_tuple(ctx, "pthread_cond_timedwait");
+      return zxp_raise(ctx, "pthread_cond_timedwait");
     }
   }
 
