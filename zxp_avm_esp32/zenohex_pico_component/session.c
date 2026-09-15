@@ -95,13 +95,13 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
 
     z_owned_reply_t *destination = &context->replies[context->reply_count];
     z_internal_null(destination);
-    if (z_clone(destination, reply) == Z_OK)
+    if (z_clone(destination, reply) != Z_OK)
     {
-      context->reply_count++;
+      context->has_allocation_error = true;
     }
     else
     {
-      context->has_allocation_error = true;
+      context->reply_count++;
     }
   }
   pthread_mutex_unlock(&context->mutex);
@@ -299,18 +299,30 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
 
   ErlNifEnv *env = erl_nif_env_from_context(ctx);
   zxp_session_resource_t *resource = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource) ||
-      !term_is_binary(argv[1]) || !term_is_binary(argv[2]))
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
+  {
+    RAISE_ERROR(BADARG_ATOM);
+  }
+
+  if (!term_is_binary(argv[1]))
+  {
+    RAISE_ERROR(BADARG_ATOM);
+  }
+
+  if (!term_is_binary(argv[2]))
   {
     RAISE_ERROR(BADARG_ATOM);
   }
 
   zxp_session_put_options_t *put_options = NULL;
-  if (!zxp_session_put_options_new(&put_options) ||
-      !zxp_session_put_options_init(argv[3], put_options))
+  if (!zxp_session_put_options_new(&put_options))
   {
-    if (put_options != NULL)
-      zxp_session_put_options_drop(put_options);
+    RAISE_ERROR(BADARG_ATOM);
+  }
+
+  if (!zxp_session_put_options_init(argv[3], put_options))
+  {
+    zxp_session_put_options_drop(put_options);
     RAISE_ERROR(BADARG_ATOM);
   }
 
@@ -389,11 +401,14 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   uint64_t timeout_ms = term_to_uint64(argv[2]);
 
   zxp_session_get_options_t *get_options = NULL;
-  if (!zxp_session_get_options_new(&get_options) ||
-      !zxp_session_get_options_init(argv[3], get_options))
+  if (!zxp_session_get_options_new(&get_options))
   {
-    if (get_options != NULL)
-      zxp_session_get_options_drop(get_options);
+    RAISE_ERROR(BADARG_ATOM);
+  }
+
+  if (!zxp_session_get_options_init(argv[3], get_options))
+  {
+    zxp_session_get_options_drop(get_options);
     RAISE_ERROR(BADARG_ATOM);
   }
 
