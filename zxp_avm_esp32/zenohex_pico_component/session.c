@@ -32,16 +32,6 @@ typedef struct
 
 typedef struct
 {
-  bool is_sample;
-  union
-  {
-    z_owned_sample_t sample;
-    zxp_reply_error_t reply_error;
-  } value;
-} zxp_session_reply_t;
-
-typedef struct
-{
   pthread_mutex_t mutex;
   pthread_cond_t complete;
   bool is_z_get_complete;
@@ -49,7 +39,7 @@ typedef struct
   size_t ref_count;
   size_t reply_count;
   size_t reply_capacity;
-  zxp_session_reply_t *replies;
+  z_owned_reply_t *replies;
 } zxp_session_get_context_t;
 
 static void zxp_session_get_context_release(zxp_session_get_context_t *context)
@@ -67,14 +57,7 @@ static void zxp_session_get_context_release(zxp_session_get_context_t *context)
   {
     for (size_t index = 0; index < context->reply_count; index++)
     {
-      if (context->replies[index].is_sample)
-      {
-        z_drop(z_move(context->replies[index].value.sample));
-      }
-      else
-      {
-        zxp_reply_error_drop(&context->replies[index].value.reply_error);
-      }
+      z_drop(z_move(context->replies[index]));
     }
     free(context->replies);
     pthread_cond_destroy(&context->complete);
@@ -99,7 +82,7 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
     {
       size_t capacity = context->reply_capacity == 0 ? ZXP_SESSION_GET_INITIAL_REPLY_CAPACITY
                                                      : context->reply_capacity * 2;
-      zxp_session_reply_t *replies = realloc(context->replies, capacity * sizeof(*replies));
+      z_owned_reply_t *replies = realloc(context->replies, capacity * sizeof(*replies));
       if (replies == NULL)
       {
         context->has_allocation_error = true;
@@ -110,26 +93,15 @@ static void zxp_session_get_reply_cb(z_loaned_reply_t *reply, void *arg)
       context->reply_capacity = capacity;
     }
 
-    zxp_session_reply_t *destination = &context->replies[context->reply_count];
-    destination->is_sample = z_reply_is_ok(reply);
-    bool copied;
-    if (destination->is_sample)
-    {
-      z_internal_null(&destination->value.sample);
-      copied = z_clone(&destination->value.sample, z_reply_ok(reply)) == Z_OK;
-    }
-    else
-    {
-      copied =
-          zxp_reply_error_from_zp_reply_err(&destination->value.reply_error, z_reply_err(reply));
-    }
-    if (!copied)
-    {
-      context->has_allocation_error = true;
-    }
-    else
+    z_owned_reply_t *destination = &context->replies[context->reply_count];
+    z_internal_null(destination);
+    if (z_clone(destination, reply) == Z_OK)
     {
       context->reply_count++;
+    }
+    else
+    {
+      context->has_allocation_error = true;
     }
   }
   pthread_mutex_unlock(&context->mutex);
@@ -575,10 +547,11 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     size_t heap_size = TUPLE_SIZE(2) + context->reply_count * CONS_SIZE;
     for (size_t index = 0; index < context->reply_count; index++)
     {
-      if (context->replies[index].is_sample)
+      const z_loaned_reply_t *reply = z_loan(context->replies[index]);
+      if (z_reply_is_ok(reply))
       {
         size_t sample_heap_size;
-        if (!zxp_sample_heap_size(z_loan(context->replies[index].value.sample), &sample_heap_size))
+        if (!zxp_sample_heap_size(z_reply_ok(reply), &sample_heap_size))
         {
           pthread_mutex_unlock(&context->mutex);
           zxp_session_get_context_release(context);
@@ -588,7 +561,14 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
       }
       else
       {
-        heap_size += zxp_reply_error_heap_size(&context->replies[index].value.reply_error);
+        size_t reply_error_heap_size;
+        if (!zxp_reply_error_heap_size(z_reply_err(reply), &reply_error_heap_size))
+        {
+          pthread_mutex_unlock(&context->mutex);
+          zxp_session_get_context_release(context);
+          RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+        }
+        heap_size += reply_error_heap_size;
       }
     }
     if (memory_ensure_free(ctx, heap_size) != MEMORY_GC_OK)
@@ -601,10 +581,10 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     replies = zxp_avm_empty_list();
     for (size_t index = context->reply_count; index > 0; index--)
     {
-      zxp_session_reply_t *reply = &context->replies[index - 1];
-      term reply_term = reply->is_sample
-                            ? zxp_struct_from_zp_sample(ctx, z_loan(reply->value.sample))
-                            : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
+      const z_loaned_reply_t *loaned_reply = z_loan(context->replies[index - 1]);
+      term reply_term = z_reply_is_ok(loaned_reply)
+                            ? zxp_struct_from_zp_sample(ctx, z_reply_ok(loaned_reply))
+                            : zxp_struct_from_zp_reply_err(ctx, z_reply_err(loaned_reply));
       if (term_is_invalid_term(reply_term))
       {
         pthread_mutex_unlock(&context->mutex);

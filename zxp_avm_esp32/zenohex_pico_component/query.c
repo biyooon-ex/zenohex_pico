@@ -1,108 +1,130 @@
-#include <memory.h>
-#include <stdlib.h>
-#include <string.h>
 #include <term.h>
 
 #include "avm_compat.h"
 #include "query.h"
 
-static bool zxp_owned_bytes_from_zp_bytes(zxp_bytes_t *destination, const z_loaned_bytes_t *bytes)
+static bool zxp_binary_heap_size_from_zp_bytes(const z_loaned_bytes_t *bytes, size_t *heap_size)
 {
-  destination->data = NULL;
-  destination->size = 0;
   if (bytes == NULL)
   {
+    *heap_size = 0;
     return true;
   }
 
   z_owned_slice_t slice;
   z_internal_null(&slice);
+  z_result_t ret = z_bytes_to_slice(bytes, &slice);
+  if (ret == Z_OK)
   {
-    z_result_t ret = z_bytes_to_slice(bytes, &slice);
-    if (ret != Z_OK)
-    {
-      return false;
-    }
-  }
-  destination->size = z_slice_len(z_loan(slice));
-  destination->data = malloc(destination->size == 0 ? 1 : destination->size);
-  if (destination->data != NULL && destination->size != 0)
-  {
-    memcpy(destination->data, z_slice_data(z_loan(slice)), destination->size);
+    *heap_size = term_binary_heap_size(z_slice_len(z_loan(slice)));
   }
   z_drop(z_move(slice));
-  return destination->data != NULL;
+  return ret == Z_OK;
 }
 
-static bool zxp_owned_bytes_from_zp_encoding(zxp_bytes_t *destination,
-                                             const z_loaned_encoding_t *encoding)
+static bool zxp_binary_heap_size_from_zp_encoding(const z_loaned_encoding_t *encoding,
+                                                  size_t *heap_size)
 {
-  destination->data = NULL;
-  destination->size = 0;
   if (encoding == NULL)
   {
+    *heap_size = 0;
     return true;
   }
 
   z_owned_string_t string;
   z_internal_null(&string);
+  z_result_t ret = z_encoding_to_string(encoding, &string);
+  if (ret == Z_OK)
+  {
+    *heap_size = term_binary_heap_size(z_string_len(z_loan(string)));
+  }
+  z_drop(z_move(string));
+  return ret == Z_OK;
+}
+
+bool zxp_reply_error_heap_size(const z_loaned_reply_err_t *reply_error, size_t *heap_size)
+{
+  size_t payload_heap_size;
+  size_t encoding_heap_size;
+  if (!zxp_binary_heap_size_from_zp_bytes(z_reply_err_payload(reply_error), &payload_heap_size) ||
+      !zxp_binary_heap_size_from_zp_encoding(z_reply_err_encoding(reply_error),
+                                             &encoding_heap_size))
+  {
+    return false;
+  }
+  *heap_size = term_map_size_in_terms(3) + payload_heap_size + encoding_heap_size;
+  return true;
+}
+
+static term zxp_binary_from_zp_bytes(Context *ctx, const z_loaned_bytes_t *bytes)
+{
+  if (bytes == NULL)
+  {
+    return nil_atom;
+  }
+
+  z_owned_slice_t slice;
+  z_internal_null(&slice);
+  term term;
+  {
+    z_result_t ret = z_bytes_to_slice(bytes, &slice);
+    if (ret != Z_OK)
+    {
+      return zxp_raise_zp(ctx, ret);
+    }
+
+    term = zxp_binary_from_bytes(ctx, z_slice_data(z_loan(slice)), z_slice_len(z_loan(slice)));
+  }
+  z_drop(z_move(slice));
+  return term;
+}
+
+static term zxp_binary_from_zp_encoding(Context *ctx, const z_loaned_encoding_t *encoding)
+{
+  if (encoding == NULL)
+  {
+    return nil_atom;
+  }
+
+  z_owned_string_t string;
+  z_internal_null(&string);
+  term term;
   {
     z_result_t ret = z_encoding_to_string(encoding, &string);
     if (ret != Z_OK)
     {
-      return false;
+      return zxp_raise_zp(ctx, ret);
     }
-  }
-  destination->size = z_string_len(z_loan(string));
-  destination->data = malloc(destination->size == 0 ? 1 : destination->size);
-  if (destination->data != NULL && destination->size != 0)
-  {
-    memcpy(destination->data, z_string_data(z_loan(string)), destination->size);
+
+    term = zxp_binary_from_bytes(ctx, z_string_data(z_loan(string)), z_string_len(z_loan(string)));
   }
   z_drop(z_move(string));
-  return destination->data != NULL;
+  return term;
 }
 
-void zxp_reply_error_drop(zxp_reply_error_t *reply_error)
+term zxp_struct_from_zp_reply_err(Context *ctx, const z_loaned_reply_err_t *reply_err)
 {
-  free(reply_error->payload.data);
-  free(reply_error->encoding.data);
-}
+  term keys[] = {
+      struct_atom,
+      payload_atom,
+      encoding_atom,
+  };
 
-bool zxp_reply_error_from_zp_reply_err(zxp_reply_error_t *destination,
-                                       const z_loaned_reply_err_t *reply_err)
-{
-  memset(destination, 0, sizeof(*destination));
-  if (!zxp_owned_bytes_from_zp_bytes(&destination->payload, z_reply_err_payload(reply_err)) ||
-      !zxp_owned_bytes_from_zp_encoding(&destination->encoding, z_reply_err_encoding(reply_err)))
-  {
-    zxp_reply_error_drop(destination);
-    return false;
-  }
-  return true;
-}
-
-size_t zxp_reply_error_heap_size(const zxp_reply_error_t *reply_error)
-{
-  return term_map_size_in_terms(3) +
-         (reply_error->payload.data == NULL ? 0
-                                            : term_binary_heap_size(reply_error->payload.size)) +
-         (reply_error->encoding.data == NULL ? 0
-                                             : term_binary_heap_size(reply_error->encoding.size));
-}
-
-static term zxp_bytes_to_term(Context *ctx, const zxp_bytes_t *bytes)
-{
-  return bytes->data == NULL ? nil_atom : zxp_binary_from_bytes(ctx, bytes->data, bytes->size);
-}
-
-term zxp_struct_from_zp_reply_err(Context *ctx, const zxp_reply_error_t *reply_err)
-{
-  term keys[] = {struct_atom, payload_atom, encoding_atom};
   term values[] = {
       reply_error_module,
-      zxp_bytes_to_term(ctx, &reply_err->payload),
-      zxp_bytes_to_term(ctx, &reply_err->encoding),
+      zxp_binary_from_zp_bytes(ctx, z_reply_err_payload(reply_err)),
+      zxp_binary_from_zp_encoding(ctx, z_reply_err_encoding(reply_err)),
   };
-  return zxp_map_from_arrays(ctx, keys, values, 3);
+
+  for (size_t index = 0; index < 3; index++)
+  {
+    if (term_is_invalid_term(values[index]))
+    {
+      return term_invalid_term();
+    }
+  }
+
+  term term;
+  term = zxp_map_from_arrays(ctx, keys, values, 3);
+  return term;
 }
