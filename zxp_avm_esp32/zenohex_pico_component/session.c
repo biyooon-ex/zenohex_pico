@@ -402,14 +402,19 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   {
     RAISE_ERROR(BADARG_ATOM);
   }
+
   if (!term_is_binary(argv[1]))
   {
     RAISE_ERROR(BADARG_ATOM);
   }
+  const char *selector = term_binary_data(argv[1]);
+  size_t selector_length = term_binary_size(argv[1]);
+
   if (!term_is_uint64(argv[2]))
   {
     RAISE_ERROR(BADARG_ATOM);
   }
+  uint64_t timeout_ms = term_to_uint64(argv[2]);
 
   zxp_session_get_options_t *get_options = NULL;
   if (!zxp_session_get_options_new(&get_options) ||
@@ -420,14 +425,12 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     RAISE_ERROR(BADARG_ATOM);
   }
 
-  uint64_t timeout_ms = term_to_uint64(argv[2]);
+  // Do not let Zenoh retain the query context after this NIF has stopped waiting for replies.
   if (get_options->options.timeout_ms > timeout_ms)
   {
     get_options->options.timeout_ms = timeout_ms;
   }
 
-  const char *selector = term_binary_data(argv[1]);
-  size_t selector_length = term_binary_size(argv[1]);
   const char *query_separator = memchr(selector, '?', selector_length);
   size_t keyexpr_length =
       query_separator == NULL ? selector_length : (size_t)(query_separator - selector);
@@ -460,6 +463,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     zxp_session_get_options_drop(get_options);
     return zxp_raise(ctx, "pthread_mutex_init/2 failed");
   }
+
   if (pthread_cond_init(&context->complete, NULL) != 0)
   {
     pthread_mutex_destroy(&context->mutex);
@@ -498,7 +502,8 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
       }
       return zxp_make_tuple2(ctx, ERROR_ATOM, session_closed_atom);
     }
-
+    // Start the reply-wait timeout after option parsing, allocation, and session-lock acquisition.
+    // Calculate it before issuing the query so a clock failure cannot leave a query running.
     if (!zxp_session_get_deadline(timeout_ms, &deadline))
     {
       pthread_mutex_unlock(&resource->mutex);
@@ -525,87 +530,92 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     return zxp_error_tuple_zp(ctx, ret);
   }
 
+  term replies;
   pthread_mutex_lock(&context->mutex);
-  while (!context->is_z_get_complete)
   {
-    struct timespec realtime_deadline;
-    int wait_result = zxp_monotonic_to_realtime_deadline(&deadline, &realtime_deadline);
-    if (wait_result == 0)
+    while (!context->is_z_get_complete)
     {
-      wait_result = pthread_cond_timedwait(&context->complete, &context->mutex, &realtime_deadline);
-    }
-    if (wait_result == ETIMEDOUT)
-    {
-      break;
-    }
-    if (wait_result != 0)
-    {
-      pthread_mutex_unlock(&context->mutex);
-      zxp_session_get_context_release(context);
-      return zxp_raise(ctx, "pthread_cond_timedwait");
-    }
-  }
-
-  if (context->has_allocation_error)
-  {
-    pthread_mutex_unlock(&context->mutex);
-    zxp_session_get_context_release(context);
-    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
-  }
-  if (context->reply_count == 0)
-  {
-    pthread_mutex_unlock(&context->mutex);
-    zxp_session_get_context_release(context);
-    if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
-    {
-      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
-    }
-    return zxp_make_tuple2(ctx, ERROR_ATOM, timeout_atom);
-  }
-
-  size_t heap_size = TUPLE_SIZE(2) + context->reply_count * CONS_SIZE;
-  for (size_t index = 0; index < context->reply_count; index++)
-  {
-    if (context->replies[index].is_sample)
-    {
-      size_t sample_heap_size;
-      if (!zxp_sample_heap_size(z_loan(context->replies[index].value.sample), &sample_heap_size))
+      struct timespec realtime_deadline;
+      int wait_result = zxp_monotonic_to_realtime_deadline(&deadline, &realtime_deadline);
+      if (wait_result == 0)
+      {
+        wait_result =
+            pthread_cond_timedwait(&context->complete, &context->mutex, &realtime_deadline);
+      }
+      if (wait_result == ETIMEDOUT)
+      {
+        break;
+      }
+      if (wait_result != 0)
       {
         pthread_mutex_unlock(&context->mutex);
         zxp_session_get_context_release(context);
-        RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+        return zxp_raise(ctx, "pthread_cond_timedwait");
       }
-      heap_size += sample_heap_size;
     }
-    else
-    {
-      heap_size += zxp_reply_error_heap_size(&context->replies[index].value.reply_error);
-    }
-  }
-  if (memory_ensure_free(ctx, heap_size) != MEMORY_GC_OK)
-  {
-    pthread_mutex_unlock(&context->mutex);
-    zxp_session_get_context_release(context);
-    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
-  }
 
-  term replies = zxp_avm_empty_list();
-  for (size_t index = context->reply_count; index > 0; index--)
-  {
-    zxp_session_reply_t *reply = &context->replies[index - 1];
-    term reply_term = reply->is_sample
-                          ? zxp_struct_from_zp_sample(ctx, z_loan(reply->value.sample))
-                          : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
-    if (term_is_invalid_term(reply_term))
+    if (context->has_allocation_error)
     {
       pthread_mutex_unlock(&context->mutex);
       zxp_session_get_context_release(context);
-      return term_invalid_term();
+      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
     }
-    replies = term_list_prepend(reply_term, replies, &ctx->heap);
+
+    if (context->reply_count == 0)
+    {
+      pthread_mutex_unlock(&context->mutex);
+      zxp_session_get_context_release(context);
+      if (memory_ensure_free(ctx, TUPLE_SIZE(2)) != MEMORY_GC_OK)
+      {
+        RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+      }
+      return zxp_make_tuple2(ctx, ERROR_ATOM, timeout_atom);
+    }
+
+    size_t heap_size = TUPLE_SIZE(2) + context->reply_count * CONS_SIZE;
+    for (size_t index = 0; index < context->reply_count; index++)
+    {
+      if (context->replies[index].is_sample)
+      {
+        size_t sample_heap_size;
+        if (!zxp_sample_heap_size(z_loan(context->replies[index].value.sample), &sample_heap_size))
+        {
+          pthread_mutex_unlock(&context->mutex);
+          zxp_session_get_context_release(context);
+          RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+        }
+        heap_size += sample_heap_size;
+      }
+      else
+      {
+        heap_size += zxp_reply_error_heap_size(&context->replies[index].value.reply_error);
+      }
+    }
+    if (memory_ensure_free(ctx, heap_size) != MEMORY_GC_OK)
+    {
+      pthread_mutex_unlock(&context->mutex);
+      zxp_session_get_context_release(context);
+      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+    }
+
+    replies = zxp_avm_empty_list();
+    for (size_t index = context->reply_count; index > 0; index--)
+    {
+      zxp_session_reply_t *reply = &context->replies[index - 1];
+      term reply_term = reply->is_sample
+                            ? zxp_struct_from_zp_sample(ctx, z_loan(reply->value.sample))
+                            : zxp_struct_from_zp_reply_err(ctx, &reply->value.reply_error);
+      if (term_is_invalid_term(reply_term))
+      {
+        pthread_mutex_unlock(&context->mutex);
+        zxp_session_get_context_release(context);
+        return term_invalid_term();
+      }
+      replies = term_list_prepend(reply_term, replies, &ctx->heap);
+    }
   }
-  term response = zxp_make_tuple2(ctx, OK_ATOM, replies);
   pthread_mutex_unlock(&context->mutex);
   zxp_session_get_context_release(context);
-  return response;
+
+  return zxp_make_tuple2(ctx, OK_ATOM, replies);
 }
