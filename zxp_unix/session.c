@@ -270,107 +270,6 @@ ERL_NIF_TERM zxp_session_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
   return ok_atom;
 }
 
-ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
-{
-  UNUSED(argc);
-
-  zxp_session_resource_t *resource = NULL;
-  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
-  {
-    return enif_make_badarg(env);
-  }
-
-  ErlNifBinary keyexpr_binary;
-  if (!enif_inspect_binary(env, argv[1], &keyexpr_binary))
-  {
-    return enif_make_badarg(env);
-  }
-
-  ErlNifPid pid;
-  if (!enif_get_local_pid(env, argv[2], &pid))
-  {
-    return enif_make_badarg(env);
-  }
-
-  z_subscriber_options_t options;
-  z_subscriber_options_default(&options);
-  if (!zxp_subscriber_options_init(env, argv[3], &options))
-  {
-    return enif_make_badarg(env);
-  }
-
-  z_owned_keyexpr_t keyexpr;
-  z_internal_null(&keyexpr);
-  z_result_t ret =
-      z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
-  if (ret != Z_OK)
-  {
-    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
-  }
-
-  zxp_subscriber_context_t *context = zxp_subscriber_context_new(&pid);
-  if (context == NULL)
-  {
-    z_drop(z_move(keyexpr));
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
-  }
-
-  z_owned_closure_sample_t callback;
-  z_internal_null(&callback);
-  ret = z_closure_sample(&callback, zxp_subscriber_sample_cb, zxp_subscriber_drop_cb, context);
-  if (ret != Z_OK)
-  {
-    zxp_subscriber_drop_cb(context);
-    z_drop(z_move(keyexpr));
-    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
-  }
-
-  z_owned_subscriber_t owned_subscriber;
-  z_internal_null(&owned_subscriber);
-  pthread_mutex_lock(&resource->mutex);
-  {
-    if (!z_internal_session_check(&resource->session))
-    {
-      pthread_mutex_unlock(&resource->mutex);
-      z_drop(z_move(callback));
-      z_drop(z_move(keyexpr));
-      return enif_make_tuple2(env, error_atom, session_closed_atom);
-    }
-
-    ret = z_declare_subscriber(
-        z_loan(resource->session), &owned_subscriber, z_loan(keyexpr), z_move(callback), &options);
-  }
-  pthread_mutex_unlock(&resource->mutex);
-  z_drop(z_move(keyexpr));
-  if (ret != Z_OK)
-  {
-    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
-  }
-
-  zxp_subscriber_resource_t *subscriber_resource =
-      enif_alloc_resource(zxp_subscriber_resource_type, sizeof(*subscriber_resource));
-  if (subscriber_resource == NULL)
-  {
-    z_drop(z_move(owned_subscriber));
-    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
-  }
-
-  z_internal_null(&subscriber_resource->subscriber);
-  subscriber_resource->is_mutex_initialized = false;
-  if (pthread_mutex_init(&subscriber_resource->mutex, NULL) != 0)
-  {
-    z_drop(z_move(owned_subscriber));
-    enif_release_resource(subscriber_resource);
-    return zxp_raise(env, __FILE__, __LINE__, "pthread_mutex_init/2 failed");
-  }
-
-  subscriber_resource->is_mutex_initialized = true;
-  z_take(&subscriber_resource->subscriber, z_move(owned_subscriber));
-  ERL_NIF_TERM subscriber_ref = enif_make_resource(env, subscriber_resource);
-  enif_release_resource(subscriber_resource);
-  return enif_make_tuple2(env, ok_atom, subscriber_ref);
-}
-
 ERL_NIF_TERM zxp_session_put(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
   UNUSED(argc);
@@ -673,4 +572,105 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   }
 
   return enif_make_tuple2(env, ok_atom, ordered_replies);
+}
+
+ERL_NIF_TERM zxp_session_declare_subscriber(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+  UNUSED(argc);
+
+  zxp_session_resource_t *resource = NULL;
+  if (!enif_get_resource(env, argv[0], zxp_session_resource_type, (void **)&resource))
+  {
+    return enif_make_badarg(env);
+  }
+
+  ErlNifBinary keyexpr_binary;
+  if (!enif_inspect_binary(env, argv[1], &keyexpr_binary))
+  {
+    return enif_make_badarg(env);
+  }
+
+  ErlNifPid pid;
+  if (!enif_get_local_pid(env, argv[2], &pid))
+  {
+    return enif_make_badarg(env);
+  }
+
+  z_subscriber_options_t options;
+  z_subscriber_options_default(&options);
+  if (!zxp_subscriber_options_init(env, argv[3], &options))
+  {
+    return enif_make_badarg(env);
+  }
+
+  z_owned_keyexpr_t keyexpr;
+  z_internal_null(&keyexpr);
+  z_result_t ret =
+      z_keyexpr_from_substr(&keyexpr, (const char *)keyexpr_binary.data, keyexpr_binary.size);
+  if (ret != Z_OK)
+  {
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  zxp_subscriber_context_t *context = zxp_subscriber_context_new(&pid);
+  if (context == NULL)
+  {
+    z_drop(z_move(keyexpr));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  z_owned_closure_sample_t callback;
+  z_internal_null(&callback);
+  ret = z_closure_sample(&callback, zxp_subscriber_sample_cb, zxp_subscriber_drop_cb, context);
+  if (ret != Z_OK)
+  {
+    zxp_subscriber_drop_cb(context);
+    z_drop(z_move(keyexpr));
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  z_owned_subscriber_t owned_subscriber;
+  z_internal_null(&owned_subscriber);
+  pthread_mutex_lock(&resource->mutex);
+  {
+    if (!z_internal_session_check(&resource->session))
+    {
+      pthread_mutex_unlock(&resource->mutex);
+      z_drop(z_move(callback));
+      z_drop(z_move(keyexpr));
+      return enif_make_tuple2(env, error_atom, session_closed_atom);
+    }
+
+    ret = z_declare_subscriber(
+        z_loan(resource->session), &owned_subscriber, z_loan(keyexpr), z_move(callback), &options);
+  }
+  pthread_mutex_unlock(&resource->mutex);
+  z_drop(z_move(keyexpr));
+  if (ret != Z_OK)
+  {
+    return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
+  }
+
+  zxp_subscriber_resource_t *subscriber_resource =
+      enif_alloc_resource(zxp_subscriber_resource_type, sizeof(*subscriber_resource));
+  if (subscriber_resource == NULL)
+  {
+    z_drop(z_move(owned_subscriber));
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+
+  z_internal_null(&subscriber_resource->subscriber);
+  subscriber_resource->is_mutex_initialized = false;
+  if (pthread_mutex_init(&subscriber_resource->mutex, NULL) != 0)
+  {
+    z_drop(z_move(owned_subscriber));
+    enif_release_resource(subscriber_resource);
+    return zxp_raise(env, __FILE__, __LINE__, "pthread_mutex_init/2 failed");
+  }
+
+  subscriber_resource->is_mutex_initialized = true;
+  z_take(&subscriber_resource->subscriber, z_move(owned_subscriber));
+  ERL_NIF_TERM subscriber_ref = enif_make_resource(env, subscriber_resource);
+  enif_release_resource(subscriber_resource);
+  return enif_make_tuple2(env, ok_atom, subscriber_ref);
 }
