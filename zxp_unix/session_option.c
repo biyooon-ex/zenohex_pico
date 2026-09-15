@@ -9,6 +9,23 @@
 // session_put_option
 //
 
+bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put_options,
+                                 ERL_NIF_TERM *error)
+{
+  *put_options = enif_alloc(sizeof(**put_options));
+  if (*put_options == NULL)
+  {
+    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return false;
+  }
+
+  z_internal_null(&(*put_options)->encoding);
+  z_internal_null(&(*put_options)->attachment);
+  z_put_options_default(&(*put_options)->options);
+  (*put_options)->timestamp = _z_timestamp_null();
+  return true;
+}
+
 bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                   zxp_session_put_options_t *put_options, ERL_NIF_TERM *error)
 {
@@ -158,23 +175,6 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
   return true;
 }
 
-bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put_options,
-                                 ERL_NIF_TERM *error)
-{
-  *put_options = enif_alloc(sizeof(**put_options));
-  if (*put_options == NULL)
-  {
-    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
-    return false;
-  }
-
-  z_internal_null(&(*put_options)->encoding);
-  z_internal_null(&(*put_options)->attachment);
-  z_put_options_default(&(*put_options)->options);
-  (*put_options)->timestamp = _z_timestamp_null();
-  return true;
-}
-
 void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
 {
   z_encoding_drop(put_options->options.encoding);
@@ -190,6 +190,23 @@ z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_opt
 ////
 // session_get_option
 //
+
+bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get_options,
+                                 ERL_NIF_TERM *error)
+{
+  *get_options = enif_alloc(sizeof(**get_options));
+  if (*get_options == NULL)
+  {
+    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return false;
+  }
+
+  z_internal_null(&(*get_options)->payload);
+  z_internal_null(&(*get_options)->encoding);
+  z_internal_null(&(*get_options)->attachment);
+  z_get_options_default(&(*get_options)->options);
+  return true;
+}
 
 bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                   zxp_session_get_options_t *get_options, ERL_NIF_TERM *error)
@@ -416,23 +433,6 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
     return false;
   }
 
-  return true;
-}
-
-bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get_options,
-                                 ERL_NIF_TERM *error)
-{
-  *get_options = enif_alloc(sizeof(**get_options));
-  if (*get_options == NULL)
-  {
-    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
-    return false;
-  }
-
-  z_internal_null(&(*get_options)->payload);
-  z_internal_null(&(*get_options)->encoding);
-  z_internal_null(&(*get_options)->attachment);
-  z_get_options_default(&(*get_options)->options);
   return true;
 }
 
