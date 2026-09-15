@@ -43,6 +43,7 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       return false;
     }
 
+    z_result_t ret;
     if (enif_is_identical(tuple[0], encoding_atom))
     {
       ErlNifBinary encoding_binary;
@@ -52,7 +53,7 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_encoding_drop(options->encoding);
-      z_result_t ret = z_encoding_from_substr(
+      ret = z_encoding_from_substr(
           &put_options->encoding, (const char *)encoding_binary.data, encoding_binary.size);
       if (ret != Z_OK)
       {
@@ -70,7 +71,7 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_bytes_drop(options->attachment);
-      z_result_t ret = z_bytes_copy_from_buf(
+      ret = z_bytes_copy_from_buf(
           &put_options->attachment, attachment_binary.data, attachment_binary.size);
       if (ret != Z_OK)
       {
@@ -229,6 +230,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       return false;
     }
 
+    z_result_t ret;
     if (enif_is_identical(tuple[0], payload_atom))
     {
       ErlNifBinary payload_binary;
@@ -238,8 +240,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_bytes_drop(options->payload);
-      z_result_t ret =
-          z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size);
+      ret = z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size);
       if (ret != Z_OK)
       {
         *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
@@ -256,7 +257,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_encoding_drop(options->encoding);
-      z_result_t ret = z_encoding_from_substr(
+      ret = z_encoding_from_substr(
           &get_options->encoding, (const char *)encoding_binary.data, encoding_binary.size);
       if (ret != Z_OK)
       {
@@ -274,7 +275,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_bytes_drop(options->attachment);
-      z_result_t ret = z_bytes_copy_from_buf(
+      ret = z_bytes_copy_from_buf(
           &get_options->attachment, attachment_binary.data, attachment_binary.size);
       if (ret != Z_OK)
       {
