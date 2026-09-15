@@ -315,15 +315,20 @@ term zxp_session_put(Context *ctx, int argc, term argv[])
   }
 
   zxp_session_put_options_t *put_options = NULL;
-  if (!zxp_session_put_options_new(&put_options))
+  term error;
+  if (!zxp_session_put_options_new(ctx, &put_options, &error))
   {
-    RAISE_ERROR(BADARG_ATOM);
+    return error;
   }
 
-  if (!zxp_session_put_options_init(argv[3], put_options))
+  if (!zxp_session_put_options_init(ctx, argv[3], put_options, &error))
   {
     zxp_session_put_options_drop(put_options);
-    RAISE_ERROR(BADARG_ATOM);
+    if (error == BADARG_ATOM)
+    {
+      RAISE_ERROR(BADARG_ATOM);
+    }
+    return error;
   }
 
   z_owned_keyexpr_t keyexpr;
@@ -401,15 +406,20 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
   uint64_t timeout_ms = term_to_uint64(argv[2]);
 
   zxp_session_get_options_t *get_options = NULL;
-  if (!zxp_session_get_options_new(&get_options))
+  term error;
+  if (!zxp_session_get_options_new(ctx, &get_options, &error))
   {
-    RAISE_ERROR(BADARG_ATOM);
+    return error;
   }
 
-  if (!zxp_session_get_options_init(argv[3], get_options))
+  if (!zxp_session_get_options_init(ctx, argv[3], get_options, &error))
   {
     zxp_session_get_options_drop(get_options);
-    RAISE_ERROR(BADARG_ATOM);
+    if (error == BADARG_ATOM)
+    {
+      RAISE_ERROR(BADARG_ATOM);
+    }
+    return error;
   }
 
   // Do not let Zenoh retain the query context after this NIF has stopped waiting for replies.

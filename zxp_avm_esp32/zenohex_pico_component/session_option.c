@@ -11,11 +11,12 @@
 // session_put_option
 //
 
-bool zxp_session_put_options_new(zxp_session_put_options_t **put_options)
+bool zxp_session_put_options_new(Context *ctx, zxp_session_put_options_t **put_options, term *error)
 {
   *put_options = malloc(sizeof(**put_options));
   if (*put_options == NULL)
   {
+    *error = zxp_raise(ctx, "malloc/1 failed");
     return false;
   }
   z_internal_null(&(*put_options)->encoding);
@@ -25,7 +26,8 @@ bool zxp_session_put_options_new(zxp_session_put_options_t **put_options)
   return true;
 }
 
-bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *put_options)
+bool zxp_session_put_options_init(Context *ctx, term option_list,
+                                  zxp_session_put_options_t *put_options, term *error)
 {
   z_put_options_t *options = &put_options->options;
   while (term_is_nonempty_list(option_list))
@@ -34,6 +36,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
     option_list = term_get_list_tail(option_list);
     if (!term_is_tuple(option) || term_get_tuple_arity(option) != 2)
     {
+      *error = BADARG_ATOM;
       return false;
     }
 
@@ -44,6 +47,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
     {
       if (!term_is_binary(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       z_encoding_drop(options->encoding);
@@ -51,6 +55,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
           &put_options->encoding, term_binary_data(value), term_binary_size(value));
       if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(ctx, ret);
         return false;
       }
       options->encoding = z_move(put_options->encoding);
@@ -59,6 +64,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
     {
       if (!term_is_binary(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       z_bytes_drop(options->attachment);
@@ -67,6 +73,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
                                   term_binary_size(value));
       if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(ctx, ret);
         return false;
       }
       options->attachment = z_move(put_options->attachment);
@@ -83,6 +90,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -118,6 +126,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -133,6 +142,7 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -140,21 +150,29 @@ bool zxp_session_put_options_init(term option_list, zxp_session_put_options_t *p
     {
       if (!term_is_binary(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       if (!zxp_timestamp_from_binary(
               term_binary_data(value), term_binary_size(value), &put_options->timestamp))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       options->timestamp = &put_options->timestamp;
     }
     else
     {
+      *error = BADARG_ATOM;
       return false;
     }
   }
-  return term_is_nil(option_list);
+  if (!term_is_nil(option_list))
+  {
+    *error = BADARG_ATOM;
+    return false;
+  }
+  return true;
 }
 
 void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
@@ -173,11 +191,12 @@ z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_opt
 // session_get_option
 //
 
-bool zxp_session_get_options_new(zxp_session_get_options_t **get_options)
+bool zxp_session_get_options_new(Context *ctx, zxp_session_get_options_t **get_options, term *error)
 {
   *get_options = malloc(sizeof(**get_options));
   if (*get_options == NULL)
   {
+    *error = zxp_raise(ctx, "malloc/1 failed");
     return false;
   }
   z_internal_null(&(*get_options)->payload);
@@ -187,7 +206,8 @@ bool zxp_session_get_options_new(zxp_session_get_options_t **get_options)
   return true;
 }
 
-bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *get_options)
+bool zxp_session_get_options_init(Context *ctx, term option_list,
+                                  zxp_session_get_options_t *get_options, term *error)
 {
   z_get_options_t *options = &get_options->options;
   while (term_is_nonempty_list(option_list))
@@ -196,6 +216,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
     option_list = term_get_list_tail(option_list);
     if (!term_is_tuple(option) || term_get_tuple_arity(option) != 2)
     {
+      *error = BADARG_ATOM;
       return false;
     }
 
@@ -206,6 +227,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
     {
       if (!term_is_binary(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       z_bytes_drop(options->payload);
@@ -213,6 +235,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
           &get_options->payload, (const uint8_t *)term_binary_data(value), term_binary_size(value));
       if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(ctx, ret);
         return false;
       }
       options->payload = z_move(get_options->payload);
@@ -221,6 +244,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
     {
       if (!term_is_binary(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       z_encoding_drop(options->encoding);
@@ -228,6 +252,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
           &get_options->encoding, term_binary_data(value), term_binary_size(value));
       if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(ctx, ret);
         return false;
       }
       options->encoding = z_move(get_options->encoding);
@@ -236,6 +261,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
     {
       if (!term_is_binary(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       z_bytes_drop(options->attachment);
@@ -244,6 +270,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
                                   term_binary_size(value));
       if (ret != Z_OK)
       {
+        *error = zxp_error_tuple_zp(ctx, ret);
         return false;
       }
       options->attachment = z_move(get_options->attachment);
@@ -268,6 +295,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -283,6 +311,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -318,6 +347,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -333,6 +363,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -352,6 +383,7 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }
@@ -374,16 +406,23 @@ bool zxp_session_get_options_init(term option_list, zxp_session_get_options_t *g
     {
       if (!term_is_uint64(value))
       {
+        *error = BADARG_ATOM;
         return false;
       }
       options->timeout_ms = term_to_uint64(value);
     }
     else
     {
+      *error = BADARG_ATOM;
       return false;
     }
   }
-  return term_is_nil(option_list);
+  if (!term_is_nil(option_list))
+  {
+    *error = BADARG_ATOM;
+    return false;
+  }
+  return true;
 }
 
 void zxp_session_get_options_drop(zxp_session_get_options_t *get_options)
