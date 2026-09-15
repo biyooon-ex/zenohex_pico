@@ -536,18 +536,26 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return zxp_raise(env, __FILE__, __LINE__, "pthread_condattr_init/1 failed");
   }
 
-  int condattr_result = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-  int cond_result =
-      condattr_result == 0 ? pthread_cond_init(&context->complete, &attr) : condattr_result;
-  pthread_condattr_destroy(&attr);
-  if (cond_result != 0)
+  if (pthread_condattr_setclock(&attr, CLOCK_MONOTONIC) != 0)
   {
+    pthread_condattr_destroy(&attr);
+    pthread_mutex_destroy(&context->mutex);
+    enif_free(context);
+    z_drop(z_move(keyexpr));
+    zxp_session_get_options_drop(get_options);
+    return zxp_raise(env, __FILE__, __LINE__, "pthread_condattr_setclock/2 failed");
+  }
+
+  if (pthread_cond_init(&context->complete, &attr) != 0)
+  {
+    pthread_condattr_destroy(&attr);
     pthread_mutex_destroy(&context->mutex);
     enif_free(context);
     z_drop(z_move(keyexpr));
     zxp_session_get_options_drop(get_options);
     return zxp_raise(env, __FILE__, __LINE__, "pthread_cond_init/2 failed");
   }
+  pthread_condattr_destroy(&attr);
 
   context->env = enif_alloc_env();
   if (context->env == NULL)
@@ -574,12 +582,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     zxp_session_get_options_drop(get_options);
     return zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
   }
-
-  pthread_mutex_lock(&context->mutex);
-  {
-    context->ref_count++;
-  }
-  pthread_mutex_unlock(&context->mutex);
+  context->ref_count++;
 
   struct timespec deadline;
   pthread_mutex_lock(&resource->mutex);
