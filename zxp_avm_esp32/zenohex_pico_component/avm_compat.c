@@ -352,6 +352,12 @@ term zxp_error_tuple(Context *ctx, const char *reason)
   return zxp_make_tuple2(ctx, ERROR_ATOM, zxp_binary_from_bytes(ctx, reason, reason_size));
 }
 
+term zxp_raise_zp(Context *ctx, z_result_t ret)
+{
+  const char *reason = zxp_error_char_zp(ret);
+  return zxp_raise(ctx, reason);
+}
+
 term zxp_test_raise(Context *ctx, int argc, term argv[])
 {
   UNUSED(argc);
