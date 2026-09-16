@@ -45,7 +45,7 @@ term zxp_config_default(Context *ctx, int argc, term argv[])
 
   if (ret != Z_OK)
   {
-    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+    return zxp_error_tuple_zp(ctx, ret);
   }
 
   z_owned_config_t *config_p = enif_alloc_resource(zxp_config_resource_type, sizeof(*config_p));
