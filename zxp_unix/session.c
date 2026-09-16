@@ -18,7 +18,7 @@
 #include "session_option.h"
 #include "subscriber.h"
 #include "subscriber_option.h"
-#include "term.h"
+#include "zxp_term.h"
 
 ErlNifResourceType *zxp_session_resource_type = NULL;
 

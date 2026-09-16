@@ -3,8 +3,8 @@
 
 #include "helper/helper.h"
 #include "sample.h"
-#include "term.h"
 #include "timestamp.h"
+#include "zxp_term.h"
 
 static ERL_NIF_TERM zxp_atom_from_zp_congestion_control(z_congestion_control_t congestion_control)
 {

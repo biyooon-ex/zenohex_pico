@@ -5,7 +5,7 @@
 #include "macro.h"
 #include "session.h"
 #include "subscriber.h"
-#include "term.h"
+#include "zxp_term.h"
 
 static int load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
 {

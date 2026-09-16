@@ -2,8 +2,8 @@
 #include <zenoh-pico.h>
 
 #include "session_option.h"
-#include "term.h"
 #include "timestamp.h"
+#include "zxp_term.h"
 
 ////
 // session_put_option

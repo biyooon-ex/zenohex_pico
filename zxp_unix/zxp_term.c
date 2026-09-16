@@ -3,7 +3,7 @@
 #include <zenoh-pico.h>
 
 #include "macro.h"
-#include "term.h"
+#include "zxp_term.h"
 
 // primitive
 ERL_NIF_TERM ok_atom;

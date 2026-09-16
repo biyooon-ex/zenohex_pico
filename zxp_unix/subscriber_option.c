@@ -3,7 +3,7 @@
 #include <zenoh-pico.h>
 
 #include "subscriber_option.h"
-#include "term.h"
+#include "zxp_term.h"
 
 bool zxp_subscriber_options_init(ErlNifEnv *env, ERL_NIF_TERM term, z_subscriber_options_t *options)
 {

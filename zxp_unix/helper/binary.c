@@ -1,7 +1,8 @@
 #include <erl_nif.h>
 #include <stdint.h>
+#include <string.h>
 
-#include "../term.h"
+#include "../zxp_term.h"
 
 ERL_NIF_TERM zxp_binary_from_bytes(ErlNifEnv *env, const uint8_t *data, size_t length)
 {
