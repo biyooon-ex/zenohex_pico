@@ -48,7 +48,7 @@ defmodule ZenohexPico do
   @spec get(
           ZenohexPico.Config.t(),
           String.t(),
-          non_neg_integer(),
+          pos_integer(),
           ZenohexPico.Session.get_opts()
         ) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}

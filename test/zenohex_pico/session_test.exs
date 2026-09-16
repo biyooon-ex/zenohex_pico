@@ -13,8 +13,7 @@ defmodule ZenohexPico.SessionTest do
     assert {:ok, connect_session} = Session.open(connect_config)
     assert :ok = Session.put(connect_session, "zenohex_pico/session", "payload")
 
-    assert {:error, :timeout} =
-             Session.get(connect_session, "zenohex_pico/no_responder", 100, query_timeout: 10)
+    assert {:error, :timeout} = Session.get(connect_session, "zenohex_pico/no_responder", 100)
 
     assert :ok = Session.close(connect_session)
     assert {:error, :session_closed} = Session.close(connect_session)

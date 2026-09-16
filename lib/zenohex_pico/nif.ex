@@ -80,9 +80,8 @@ defmodule ZenohexPico.Nif do
              | :data_low
              | :background}
           | {:target, :best_matching | :all | :all_complete}
-          | {:query_timeout, non_neg_integer()}
 
-  @spec session_get(reference(), String.t(), non_neg_integer(), [session_get_option()]) ::
+  @spec session_get(reference(), String.t(), pos_integer(), [session_get_option()]) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
           | {:error, :timeout}
           | {:error, reason :: term()}

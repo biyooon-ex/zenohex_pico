@@ -404,6 +404,10 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     RAISE_ERROR(BADARG_ATOM);
   }
   uint64_t timeout_ms = term_to_uint64(argv[2]);
+  if (timeout_ms == 0)
+  {
+    RAISE_ERROR(BADARG_ATOM);
+  }
 
   zxp_session_get_options_t *get_options = NULL;
   term error;
@@ -422,11 +426,7 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     return error;
   }
 
-  // Do not let Zenoh retain the query context after this NIF has stopped waiting for replies.
-  if (get_options->options.timeout_ms > timeout_ms)
-  {
-    get_options->options.timeout_ms = timeout_ms;
-  }
+  get_options->options.timeout_ms = timeout_ms;
 
   const char *query_separator = memchr(selector, '?', selector_length);
   size_t keyexpr_length =
