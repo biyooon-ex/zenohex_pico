@@ -76,4 +76,5 @@ extern ERL_NIF_TERM zxp_raise_null_pointer(ErlNifEnv *env, const char *file, int
 extern ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret);
 extern ERL_NIF_TERM zxp_error_binary_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret);
 extern const char *zxp_error_char_zp(z_result_t ret);
+extern ERL_NIF_TERM zxp_raise_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret);
 extern ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);

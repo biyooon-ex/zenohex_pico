@@ -360,6 +360,12 @@ ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_re
   return enif_make_tuple2(env, error_atom, binary);
 }
 
+ERL_NIF_TERM zxp_raise_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
+{
+  const char *reason = zxp_error_char_zp(ret);
+  return zxp_raise(env, file, line, reason);
+}
+
 ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
   UNUSED(argc);
