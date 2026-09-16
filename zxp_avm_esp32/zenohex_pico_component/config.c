@@ -138,13 +138,13 @@ term zxp_config_insert(Context *ctx, int argc, term argv[])
     RAISE_ERROR(BADARG_ATOM);
   }
 
-  if (!term_is_binary(argv[2]))
+  avm_int_t key = term_to_int(argv[1]);
+  if (key < 0 || key > UINT8_MAX)
   {
     RAISE_ERROR(BADARG_ATOM);
   }
 
-  avm_int_t key = term_to_int(argv[1]);
-  if (key < 0 || key > UINT8_MAX)
+  if (!term_is_binary(argv[2]))
   {
     RAISE_ERROR(BADARG_ATOM);
   }
