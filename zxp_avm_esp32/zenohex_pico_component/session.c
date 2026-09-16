@@ -533,12 +533,20 @@ term zxp_session_get(Context *ctx, int argc, term argv[])
     while (!context->is_z_get_complete)
     {
       struct timespec realtime_deadline;
-      int wait_result = zxp_monotonic_to_realtime_deadline(&deadline, &realtime_deadline);
-      if (wait_result == 0)
+      int conversion_result = zxp_monotonic_to_realtime_deadline(&deadline, &realtime_deadline);
+      if (conversion_result == ETIMEDOUT)
       {
-        wait_result =
-            pthread_cond_timedwait(&context->complete, &context->mutex, &realtime_deadline);
+        break;
       }
+      if (conversion_result != 0)
+      {
+        pthread_mutex_unlock(&context->mutex);
+        zxp_session_get_context_release(context);
+        return zxp_raise(ctx, "zxp_monotonic_to_realtime_deadline");
+      }
+
+      int wait_result =
+          pthread_cond_timedwait(&context->complete, &context->mutex, &realtime_deadline);
       if (wait_result == ETIMEDOUT)
       {
         break;
