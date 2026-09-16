@@ -1,5 +1,6 @@
 #include <erl_nif.h>
 #include <nifs.h>
+#include <stdbool.h>
 
 extern ErlNifResourceType *zxp_session_resource_type;
 

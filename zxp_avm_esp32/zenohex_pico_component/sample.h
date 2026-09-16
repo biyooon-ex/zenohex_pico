@@ -1,4 +1,5 @@
 #include <nifs.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <zenoh-pico.h>
 

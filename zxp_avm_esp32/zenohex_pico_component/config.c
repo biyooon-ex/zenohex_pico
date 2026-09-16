@@ -2,6 +2,8 @@
 #include <erl_nif_priv.h>
 #include <memory.h>
 #include <nifs.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <term.h>
 #include <utils.h>

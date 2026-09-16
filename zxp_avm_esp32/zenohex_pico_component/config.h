@@ -1,5 +1,6 @@
 #include <erl_nif.h>
 #include <nifs.h>
+#include <stdbool.h>
 
 extern ErlNifResourceType *zxp_config_resource_type;
 extern bool zxp_config_enif_init_resource_type(ErlNifEnv *env);
