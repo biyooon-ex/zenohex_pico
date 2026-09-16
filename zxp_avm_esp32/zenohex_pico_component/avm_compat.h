@@ -1,6 +1,3 @@
-#ifndef ZXP_AVM_COMPAT_H
-#define ZXP_AVM_COMPAT_H
-
 #include <nifs.h>
 #include <stddef.h>
 #include <zenoh-pico.h>
@@ -79,5 +76,3 @@ extern term zxp_error_tuple_zp(Context *ctx, z_result_t ret);
 extern term zxp_error_tuple(Context *ctx, const char *reason);
 extern term zxp_raise_zp(Context *ctx, z_result_t ret);
 extern term zxp_test_raise(Context *ctx, int argc, term argv[]);
-
-#endif

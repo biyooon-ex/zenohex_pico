@@ -1,6 +1,3 @@
-#ifndef ZXP_SESSION_OPTION_H
-#define ZXP_SESSION_OPTION_H
-
 #include <nifs.h>
 #include <stdbool.h>
 #include <zenoh-pico.h>
@@ -38,5 +35,3 @@ extern bool zxp_session_get_options_new(Context *ctx, zxp_session_get_options_t 
 extern bool zxp_session_get_options_init(Context *ctx, term options,
                                          zxp_session_get_options_t *get_options, term *error);
 extern z_get_options_t *zxp_session_get_options_loan(zxp_session_get_options_t *get_options);
-
-#endif

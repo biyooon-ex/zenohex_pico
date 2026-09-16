@@ -1,6 +1,3 @@
-#ifndef ZXP_SESSION_H
-#define ZXP_SESSION_H
-
 #include <erl_nif.h>
 #include <nifs.h>
 
@@ -11,5 +8,3 @@ extern term zxp_session_open(Context *ctx, int argc, term argv[]);
 extern term zxp_session_close(Context *ctx, int argc, term argv[]);
 extern term zxp_session_put(Context *ctx, int argc, term argv[]);
 extern term zxp_session_get(Context *ctx, int argc, term argv[]);
-
-#endif
