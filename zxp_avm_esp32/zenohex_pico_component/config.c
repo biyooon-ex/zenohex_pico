@@ -103,21 +103,12 @@ term zxp_config_get(Context *ctx, int argc, term argv[])
   }
 
   size_t len = strlen(value);
-  char *value_copy = malloc(len);
-  if (len != 0 && value_copy == NULL)
-  {
-    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
-  }
-  memcpy(value_copy, value, len);
-
   if (memory_ensure_free(ctx, term_binary_heap_size(len) + TUPLE_SIZE(2)) != MEMORY_GC_OK)
   {
-    free(value_copy);
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
 
-  term binary = zxp_binary_from_bytes(ctx, value_copy, len);
-  free(value_copy);
+  term binary = zxp_binary_from_bytes(ctx, value, len);
 
   return zxp_make_tuple2(ctx, OK_ATOM, binary);
 }
@@ -181,7 +172,7 @@ term zxp_config_insert(Context *ctx, int argc, term argv[])
     {
       free(value);
       enif_release_resource(new_config_p);
-      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+      return zxp_error_tuple_zp(ctx, ret);
     }
   }
 
@@ -191,7 +182,7 @@ term zxp_config_insert(Context *ctx, int argc, term argv[])
     if (ret != Z_OK)
     {
       enif_release_resource(new_config_p);
-      RAISE_ERROR(OUT_OF_MEMORY_ATOM);
+      return zxp_error_tuple_zp(ctx, ret);
     }
   }
 

@@ -43,6 +43,12 @@ defmodule ZenohexPico.NifTest do
         Nif.config_insert(config, @z_config_mode_key, "peer\0ignored")
       end
     end
+
+    test "config_get/2 returns an empty inserted value" do
+      {:ok, config} = Nif.config_default()
+      assert {:ok, config} = Nif.config_insert(config, @z_config_mode_key, "")
+      assert Nif.config_get(config, @z_config_mode_key) == {:ok, ""}
+    end
   end
 
   describe "session open/close" do
@@ -180,6 +186,12 @@ defmodule ZenohexPico.NifTest do
 
       assert_raise ArgumentError, fn ->
         Nif.session_get(connect_session, "zenohex_pico/no_responder", 100, attachment: nil)
+      end
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(connect_session, "zenohex_pico/no_responder", 100,
+          accept_replies: :invalid
+        )
       end
 
       assert_raise ArgumentError, fn ->

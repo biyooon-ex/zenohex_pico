@@ -399,6 +399,7 @@ bool zxp_session_get_options_init(Context *ctx, term option_list,
       }
       else
       {
+        *error = BADARG_ATOM;
         return false;
       }
     }

@@ -333,7 +333,8 @@ term zxp_error_tuple_zp(Context *ctx, z_result_t ret)
   const char *reason = zxp_error_char_zp(ret);
   size_t reason_size = strlen(reason);
 
-  if (UNLIKELY(memory_ensure_free(ctx, term_binary_heap_size(reason_size)) != MEMORY_GC_OK))
+  if (UNLIKELY(memory_ensure_free(ctx, term_binary_heap_size(reason_size) + TUPLE_SIZE(2)) !=
+               MEMORY_GC_OK))
   {
     RAISE_ERROR(OUT_OF_MEMORY_ATOM);
   }
