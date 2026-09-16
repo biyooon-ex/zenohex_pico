@@ -2,14 +2,14 @@
 #include <stddef.h>
 #include <zenoh-pico.h>
 
-// Primitive.
-extern term nil_atom;
+// primitive
 extern term not_found_atom;
+extern term nil_atom;
 extern term timeout_atom;
 extern term session_closed_atom;
 extern term struct_atom;
 
-// Sample fields.
+//
 extern term payload_atom;
 extern term encoding_atom;
 extern term attachment_atom;
@@ -17,42 +17,42 @@ extern term express_atom;
 extern term key_expr_atom;
 extern term timestamp_atom;
 
-// Query options.
+// query option
 extern term query_timeout_atom;
 extern term accept_replies_atom;
 extern term consolidation_atom;
 extern term target_atom;
 
-// Sample kind.
+// kind
 extern term kind_atom;
 extern term delete_atom;
 extern term put_atom;
 
-// Modules.
+// module
 extern term sample_module;
 extern term reply_error_module;
 
-// Congestion control.
+// congestion control
 extern term congestion_control_atom;
 extern term block_atom;
 extern term drop_atom;
 
-// Consolidation.
+// consolidation
 extern term auto_atom;
 extern term none_atom;
 extern term monotonic_atom;
 extern term latest_atom;
 
-// Query target.
+// target
 extern term best_matching_atom;
 extern term all_atom;
 extern term all_complete_atom;
 
-// Accepted replies.
+// accept replies
 extern term matching_query_atom;
 extern term any_atom;
 
-// Priority.
+// priority
 extern term priority_atom;
 extern term real_time_atom;
 extern term interactive_high_atom;
@@ -71,8 +71,7 @@ extern void zxp_init_atom(GlobalContext *global);
 extern term zxp_raise(Context *ctx, const char *reason);
 extern term zxp_binary_from_bytes(Context *ctx, const void *data, size_t size);
 extern term zxp_make_tuple2(Context *ctx, term first, term second);
-term zxp_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size);
+extern term zxp_map_from_arrays(Context *ctx, const term keys[], const term values[], size_t size);
 extern term zxp_error_tuple_zp(Context *ctx, z_result_t ret);
-extern term zxp_error_tuple(Context *ctx, const char *reason);
 extern term zxp_raise_zp(Context *ctx, z_result_t ret);
 extern term zxp_test_raise(Context *ctx, int argc, term argv[]);

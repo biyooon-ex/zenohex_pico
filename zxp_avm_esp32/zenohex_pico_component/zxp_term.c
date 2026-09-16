@@ -5,14 +5,14 @@
 
 #include "zxp_term.h"
 
-// Primitive.
-term nil_atom;
+// primitive
 term not_found_atom;
+term nil_atom;
 term timeout_atom;
 term session_closed_atom;
 term struct_atom;
 
-// Sample fields.
+//
 term payload_atom;
 term encoding_atom;
 term attachment_atom;
@@ -20,42 +20,42 @@ term express_atom;
 term key_expr_atom;
 term timestamp_atom;
 
-// Query options.
+// query option
 term query_timeout_atom;
 term accept_replies_atom;
 term consolidation_atom;
 term target_atom;
 
-// Sample kind.
+// kind
 term kind_atom;
 term delete_atom;
 term put_atom;
 
-// Modules.
+// module
 term sample_module;
 term reply_error_module;
 
-// Congestion control.
+// congestion control
 term congestion_control_atom;
 term block_atom;
 term drop_atom;
 
-// Consolidation.
+// consolidation
 term auto_atom;
 term none_atom;
 term monotonic_atom;
 term latest_atom;
 
-// Query target.
+// target
 term best_matching_atom;
 term all_atom;
 term all_complete_atom;
 
-// Accepted replies.
+// accept replies
 term matching_query_atom;
 term any_atom;
 
-// Priority.
+// priority
 term priority_atom;
 term real_time_atom;
 term interactive_high_atom;
@@ -67,14 +67,14 @@ term background_atom;
 
 void zxp_init_atom(GlobalContext *global)
 {
-  // Primitive.
+  // primitive
   nil_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "nil"));
   not_found_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "not_found"));
   timeout_atom = globalcontext_make_atom(global, ATOM_STR("\x7", "timeout"));
   session_closed_atom = globalcontext_make_atom(global, ATOM_STR("\xE", "session_closed"));
   struct_atom = globalcontext_make_atom(global, ATOM_STR("\xA", "__struct__"));
 
-  // Sample fields.
+  //
   payload_atom = globalcontext_make_atom(global, ATOM_STR("\x7", "payload"));
   encoding_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "encoding"));
   attachment_atom = globalcontext_make_atom(global, ATOM_STR("\xA", "attachment"));
@@ -82,43 +82,43 @@ void zxp_init_atom(GlobalContext *global)
   key_expr_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "key_expr"));
   timestamp_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "timestamp"));
 
-  // Query options.
+  // query option
   query_timeout_atom = globalcontext_make_atom(global, ATOM_STR("\xD", "query_timeout"));
   accept_replies_atom = globalcontext_make_atom(global, ATOM_STR("\xE", "accept_replies"));
   consolidation_atom = globalcontext_make_atom(global, ATOM_STR("\xD", "consolidation"));
   target_atom = globalcontext_make_atom(global, ATOM_STR("\x6", "target"));
 
-  // Sample kind.
+  // kind
   kind_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "kind"));
   delete_atom = globalcontext_make_atom(global, ATOM_STR("\x6", "delete"));
   put_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "put"));
 
-  // Modules.
+  // module
   sample_module = globalcontext_make_atom(global, ATOM_STR("\x19", "Elixir.ZenohexPico.Sample"));
   reply_error_module =
       globalcontext_make_atom(global, ATOM_STR("\x23", "Elixir.ZenohexPico.Query.ReplyError"));
 
-  // Congestion control.
+  // congestion control
   congestion_control_atom = globalcontext_make_atom(global, ATOM_STR("\x12", "congestion_control"));
   block_atom = globalcontext_make_atom(global, ATOM_STR("\x5", "block"));
   drop_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "drop"));
 
-  // Consolidation.
+  // consolidation
   auto_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "auto"));
   none_atom = globalcontext_make_atom(global, ATOM_STR("\x4", "none"));
   monotonic_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "monotonic"));
   latest_atom = globalcontext_make_atom(global, ATOM_STR("\x6", "latest"));
 
-  // Query target.
+  // target
   best_matching_atom = globalcontext_make_atom(global, ATOM_STR("\xD", "best_matching"));
   all_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "all"));
   all_complete_atom = globalcontext_make_atom(global, ATOM_STR("\xC", "all_complete"));
 
-  // Accepted replies.
+  // accept replies
   matching_query_atom = globalcontext_make_atom(global, ATOM_STR("\xE", "matching_query"));
   any_atom = globalcontext_make_atom(global, ATOM_STR("\x3", "any"));
 
-  // Priority.
+  // priority
   priority_atom = globalcontext_make_atom(global, ATOM_STR("\x8", "priority"));
   real_time_atom = globalcontext_make_atom(global, ATOM_STR("\x9", "real_time"));
   interactive_high_atom = globalcontext_make_atom(global, ATOM_STR("\x10", "interactive_high"));
@@ -340,16 +340,6 @@ term zxp_error_tuple_zp(Context *ctx, z_result_t ret)
 
   term binary = term_from_literal_binary(reason, reason_size, &ctx->heap, ctx->global);
   return zxp_make_tuple2(ctx, ERROR_ATOM, binary);
-}
-
-term zxp_error_tuple(Context *ctx, const char *reason)
-{
-  size_t reason_size = strlen(reason);
-  if (memory_ensure_free(ctx, term_binary_heap_size(reason_size) + TUPLE_SIZE(2)) != MEMORY_GC_OK)
-  {
-    RAISE_ERROR(OUT_OF_MEMORY_ATOM);
-  }
-  return zxp_make_tuple2(ctx, ERROR_ATOM, zxp_binary_from_bytes(ctx, reason, reason_size));
 }
 
 term zxp_raise_zp(Context *ctx, z_result_t ret)
