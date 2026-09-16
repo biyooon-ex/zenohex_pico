@@ -2,6 +2,7 @@
 #include <zenoh-pico.h>
 
 #include "helper/helper.h"
+#include "sample.h"
 #include "term.h"
 #include "timestamp.h"
 

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <zenoh-pico.h>
 
+#include "config.h"
 #include "macro.h"
 #include "term.h"
 

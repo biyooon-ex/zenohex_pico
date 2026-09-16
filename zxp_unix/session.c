@@ -14,6 +14,7 @@
 #include "macro.h"
 #include "query.h"
 #include "sample.h"
+#include "session.h"
 #include "session_option.h"
 #include "subscriber.h"
 #include "subscriber_option.h"

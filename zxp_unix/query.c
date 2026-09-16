@@ -2,6 +2,7 @@
 #include <zenoh-pico.h>
 
 #include "helper/helper.h"
+#include "query.h"
 #include "term.h"
 
 static ERL_NIF_TERM zxp_binary_from_zp_bytes(ErlNifEnv *env, const z_loaned_bytes_t *bytes)

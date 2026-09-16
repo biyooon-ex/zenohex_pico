@@ -1,4 +1,5 @@
 #include <erl_nif.h>
+#include <stdbool.h>
 #include <zenoh-pico.h>
 
 ////
