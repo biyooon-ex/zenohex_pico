@@ -1,7 +1,7 @@
 #include <term.h>
 
-#include "avm_compat.h"
 #include "query.h"
+#include "zxp_term.h"
 
 static bool zxp_binary_heap_size_from_zp_bytes(const z_loaned_bytes_t *bytes, size_t *heap_size)
 {

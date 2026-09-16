@@ -12,10 +12,10 @@
 
 #include <zenoh-pico.h>
 
-#include "avm_compat.h"
 #include "config.h"
 #include "session.h"
 #include "session_option.h"
+#include "zxp_term.h"
 
 static void zenohex_pico_init_nif(GlobalContext *global)
 {

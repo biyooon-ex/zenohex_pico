@@ -4,9 +4,9 @@
 #include <string.h>
 #include <term.h>
 
-#include "avm_compat.h"
 #include "sample.h"
 #include "timestamp.h"
+#include "zxp_term.h"
 
 static bool zxp_bytes_heap_size(const z_loaned_bytes_t *bytes, size_t *heap_size)
 {

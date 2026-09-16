@@ -9,8 +9,8 @@
 #include <utils.h>
 #include <zenoh-pico.h>
 
-#include "avm_compat.h"
 #include "config.h"
+#include "zxp_term.h"
 
 ErlNifResourceType *zxp_config_resource_type = NULL;
 

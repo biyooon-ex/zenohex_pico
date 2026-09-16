@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <zenoh-pico.h>
 
-#include "avm_compat.h"
 #include "timestamp.h"
+#include "zxp_term.h"
 
 static int zxp_decimal_digit(uint8_t value)
 {

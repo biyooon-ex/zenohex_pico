@@ -3,9 +3,9 @@
 #include <term.h>
 #include <zenoh-pico.h>
 
-#include "avm_compat.h"
 #include "session_option.h"
 #include "timestamp.h"
+#include "zxp_term.h"
 
 ////
 // session_put_option

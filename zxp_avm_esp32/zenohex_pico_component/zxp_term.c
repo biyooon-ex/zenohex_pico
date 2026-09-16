@@ -3,7 +3,7 @@
 #include <term.h>
 #include <zenoh-pico.h>
 
-#include "avm_compat.h"
+#include "zxp_term.h"
 
 // Primitive.
 term nil_atom;
