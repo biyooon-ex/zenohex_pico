@@ -17,6 +17,7 @@ mix compile # this step prepares zenoh-pico submodule
 cd /path/to/repos
 git clone https://github.com/atomvm/AtomVM.git
 cd AtomVM/
+# main branch head commit as of 2026-09-17
 git checkout 0220c78ee9e7cf6c763a278b44d81ce309fcf1ab
 ```
 
