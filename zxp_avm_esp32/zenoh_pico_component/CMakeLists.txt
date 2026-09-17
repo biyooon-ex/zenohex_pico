@@ -57,6 +57,11 @@ list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_ESPIDF_SRCS})
 list(APPEND ZENOHPICO_SRCS
 	"${ZENOHPICO_SUBMODULE_DIR}/src/system/socket/esp32.c")
 
+# zenoh-pico creates build/include when built with its own CMake project, but
+# ESP-IDF validates component include directories during configuration first.
+# Create only the directory here so existing generated headers are preserved.
+file(MAKE_DIRECTORY "${ZENOHPICO_SUBMODULE_DIR}/build/include")
+
 idf_component_register(
 	SRCS ${ZENOHPICO_SRCS}
 	INCLUDE_DIRS
