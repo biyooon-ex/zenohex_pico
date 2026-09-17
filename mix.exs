@@ -1,3 +1,5 @@
+Code.require_file("mix/tasks/compile.zenoh_pico.exs", __DIR__)
+
 defmodule ZenohexPico.MixProject do
   use Mix.Project
 
@@ -23,6 +25,7 @@ defmodule ZenohexPico.MixProject do
          git: "https://github.com/atomvm/exatomvm.git",
          ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8"}
       ],
+      compilers: [:zenoh_pico] ++ Mix.compilers(),
       atomvm: [
         start:
           case Mix.env() do
@@ -58,7 +61,7 @@ defmodule ZenohexPico.MixProject do
         {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
         {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
       ],
-      compilers: [:elixir_make] ++ Mix.compilers(),
+      compilers: [:zenoh_pico, :elixir_make] ++ Mix.compilers(),
       make_cwd: "zxp_unix",
       make_clean: ["clean"],
       aliases: [
