@@ -92,3 +92,36 @@ source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
 # `mix flash` is an alias of `mix atomvm.packbeam` and `mix atomvm.esp32.flash --port /dev/ttyACM0 --baud 921600`
 mix flash
 ```
+
+## How to test
+
+Verify that the ESP32 publishes ten samples to a subscriber running on a Unix host.
+
+1. Store Wi-Fi credentials once from an application running on the device. The test firmware reads them from AtomVM NVS.
+
+```elixir
+:esp.nvs_put_binary(:atomvm, :sta_ssid, "SSID")
+:esp.nvs_put_binary(:atomvm, :sta_psk, "Password")
+```
+
+2. From the repository root, start the subscriber in one terminal. This call waits until it receives ten samples.
+
+```elixir
+iex -S mix
+iex> ZenohexPico.AvmEsp32.Test.start_subscriber_on_unix()
+```
+
+3. In another terminal, from the repository root, flash the test firmware.
+
+```sh
+export MIX_TARGET=avm_esp32
+source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
+MIX_ENV=test mix flash
+```
+
+4. Verify that the Unix terminal prints ten samples with payload suffixes from `0` through `9`. The subscriber and session close automatically after the tenth sample.
+
+```elixir
+%ZenohexPico.Sample{attachment: "", congestion_control: :drop, encoding: "zenoh/bytes", express: false, key_expr: "key/expr", kind: :put, payload: "from M5STACK CORE S3, 0", priority: :data, timestamp: nil}
+%ZenohexPico.Sample{attachment: "", congestion_control: :drop, encoding: "zenoh/bytes", express: false, key_expr: "key/expr", kind: :put, payload: "from M5STACK CORE S3, 9", priority: :data, timestamp: nil}
+```
