@@ -8,7 +8,7 @@
 #include "macro.h"
 #include "sample.h"
 #include "subscriber.h"
-#include "term.h"
+#include "zxp_term.h"
 
 #define ZXP_SUBSCRIBER_QUEUE_CAPACITY 256
 

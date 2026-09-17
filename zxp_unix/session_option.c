@@ -2,12 +2,29 @@
 #include <zenoh-pico.h>
 
 #include "session_option.h"
-#include "term.h"
 #include "timestamp.h"
+#include "zxp_term.h"
 
 ////
 // session_put_option
 //
+
+bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put_options,
+                                 ERL_NIF_TERM *error)
+{
+  *put_options = enif_alloc(sizeof(**put_options));
+  if (*put_options == NULL)
+  {
+    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return false;
+  }
+
+  z_internal_null(&(*put_options)->encoding);
+  z_internal_null(&(*put_options)->attachment);
+  z_put_options_default(&(*put_options)->options);
+  (*put_options)->timestamp = _z_timestamp_null();
+  return true;
+}
 
 bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                   zxp_session_put_options_t *put_options, ERL_NIF_TERM *error)
@@ -26,6 +43,7 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       return false;
     }
 
+    z_result_t ret;
     if (enif_is_identical(tuple[0], encoding_atom))
     {
       ErlNifBinary encoding_binary;
@@ -35,7 +53,7 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_encoding_drop(options->encoding);
-      z_result_t ret = z_encoding_from_substr(
+      ret = z_encoding_from_substr(
           &put_options->encoding, (const char *)encoding_binary.data, encoding_binary.size);
       if (ret != Z_OK)
       {
@@ -53,7 +71,7 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_bytes_drop(options->attachment);
-      z_result_t ret = z_bytes_copy_from_buf(
+      ret = z_bytes_copy_from_buf(
           &put_options->attachment, attachment_binary.data, attachment_binary.size);
       if (ret != Z_OK)
       {
@@ -158,23 +176,6 @@ bool zxp_session_put_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
   return true;
 }
 
-bool zxp_session_put_options_new(ErlNifEnv *env, zxp_session_put_options_t **put_options,
-                                 ERL_NIF_TERM *error)
-{
-  *put_options = enif_alloc(sizeof(**put_options));
-  if (*put_options == NULL)
-  {
-    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
-    return false;
-  }
-
-  z_internal_null(&(*put_options)->encoding);
-  z_internal_null(&(*put_options)->attachment);
-  z_put_options_default(&(*put_options)->options);
-  (*put_options)->timestamp = _z_timestamp_null();
-  return true;
-}
-
 void zxp_session_put_options_drop(zxp_session_put_options_t *put_options)
 {
   z_encoding_drop(put_options->options.encoding);
@@ -190,6 +191,23 @@ z_put_options_t *zxp_session_put_options_loan(zxp_session_put_options_t *put_opt
 ////
 // session_get_option
 //
+
+bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get_options,
+                                 ERL_NIF_TERM *error)
+{
+  *get_options = enif_alloc(sizeof(**get_options));
+  if (*get_options == NULL)
+  {
+    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
+    return false;
+  }
+
+  z_internal_null(&(*get_options)->payload);
+  z_internal_null(&(*get_options)->encoding);
+  z_internal_null(&(*get_options)->attachment);
+  z_get_options_default(&(*get_options)->options);
+  return true;
+}
 
 bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
                                   zxp_session_get_options_t *get_options, ERL_NIF_TERM *error)
@@ -212,6 +230,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
       return false;
     }
 
+    z_result_t ret;
     if (enif_is_identical(tuple[0], payload_atom))
     {
       ErlNifBinary payload_binary;
@@ -221,8 +240,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_bytes_drop(options->payload);
-      z_result_t ret =
-          z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size);
+      ret = z_bytes_copy_from_buf(&get_options->payload, payload_binary.data, payload_binary.size);
       if (ret != Z_OK)
       {
         *error = zxp_error_tuple_zp(env, __FILE__, __LINE__, ret);
@@ -239,7 +257,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_encoding_drop(options->encoding);
-      z_result_t ret = z_encoding_from_substr(
+      ret = z_encoding_from_substr(
           &get_options->encoding, (const char *)encoding_binary.data, encoding_binary.size);
       if (ret != Z_OK)
       {
@@ -257,7 +275,7 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
         return false;
       }
       z_bytes_drop(options->attachment);
-      z_result_t ret = z_bytes_copy_from_buf(
+      ret = z_bytes_copy_from_buf(
           &get_options->attachment, attachment_binary.data, attachment_binary.size);
       if (ret != Z_OK)
       {
@@ -416,23 +434,6 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
     return false;
   }
 
-  return true;
-}
-
-bool zxp_session_get_options_new(ErlNifEnv *env, zxp_session_get_options_t **get_options,
-                                 ERL_NIF_TERM *error)
-{
-  *get_options = enif_alloc(sizeof(**get_options));
-  if (*get_options == NULL)
-  {
-    *error = zxp_raise_null_pointer(env, __FILE__, __LINE__);
-    return false;
-  }
-
-  z_internal_null(&(*get_options)->payload);
-  z_internal_null(&(*get_options)->encoding);
-  z_internal_null(&(*get_options)->attachment);
-  z_get_options_default(&(*get_options)->options);
   return true;
 }
 

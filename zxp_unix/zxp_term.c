@@ -1,8 +1,10 @@
 #include <erl_nif.h>
 #include <stdio.h>
+#include <string.h>
 #include <zenoh-pico.h>
 
 #include "macro.h"
+#include "zxp_term.h"
 
 // primitive
 ERL_NIF_TERM ok_atom;
@@ -177,6 +179,21 @@ ERL_NIF_TERM zxp_raise(ErlNifEnv *env, const char *file, int line, const char *r
 {
   ERL_NIF_TERM binary = zxp_error_binary(env, file, line, reason);
   return enif_raise_exception(env, binary);
+}
+
+ERL_NIF_TERM zxp_binary_from_bytes(ErlNifEnv *env, const uint8_t *data, size_t length)
+{
+  ERL_NIF_TERM binary;
+  uint8_t *dest = enif_make_new_binary(env, length, &binary);
+  if (dest == NULL)
+  {
+    return zxp_raise_null_pointer(env, __FILE__, __LINE__);
+  }
+  if (length > 0)
+  {
+    memcpy(dest, data, length);
+  }
+  return binary;
 }
 
 ERL_NIF_TERM zxp_raise_null_pointer(ErlNifEnv *env, const char *file, int line)
@@ -357,6 +374,12 @@ ERL_NIF_TERM zxp_error_tuple_zp(ErlNifEnv *env, const char *file, int line, z_re
 {
   ERL_NIF_TERM binary = zxp_error_binary_zp(env, file, line, ret);
   return enif_make_tuple2(env, error_atom, binary);
+}
+
+ERL_NIF_TERM zxp_raise_zp(ErlNifEnv *env, const char *file, int line, z_result_t ret)
+{
+  const char *reason = zxp_error_char_zp(ret);
+  return zxp_raise(env, file, line, reason);
 }
 
 ERL_NIF_TERM zxp_test_raise(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])

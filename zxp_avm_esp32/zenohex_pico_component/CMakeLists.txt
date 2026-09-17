@@ -1,6 +1,6 @@
 idf_component_register(
     # ソース
-    SRCS "zenohex_pico.c"
+    SRC_DIRS "."
     # 依存関係
     PRIV_REQUIRES "libatomvm" "zenoh_pico_component"
     # オブジェクトファイルを強制的にリンクするオプション

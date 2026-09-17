@@ -2,8 +2,9 @@
 #include <stdbool.h>
 #include <zenoh-pico.h>
 
+#include "config.h"
 #include "macro.h"
-#include "term.h"
+#include "zxp_term.h"
 
 ErlNifResourceType *zxp_config_resource_type = NULL;
 

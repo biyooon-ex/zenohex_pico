@@ -23,11 +23,27 @@ defmodule ZenohexPico.MixProject do
          git: "https://github.com/atomvm/exatomvm.git",
          ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8"}
       ],
-      atomvm: [start: ZenohexPico, flash_offset: 0x250000],
+      atomvm: [
+        start:
+          case Mix.env() do
+            :test -> ZenohexPico.AvmEsp32.Test
+            _ -> ZenohexPico.AvmEsp32
+          end,
+        flash_offset: 0x250000
+      ],
       aliases: [
         flash: [
           "atomvm.packbeam",
           "atomvm.esp32.flash --port /dev/ttyACM0 --baud 921600"
+        ],
+        format: [
+          fn _ ->
+            if not is_nil(System.find_executable("clang-format")) do
+              files = Path.wildcard("zxp_avm_esp32/**/*.{c,h}")
+              System.cmd("clang-format", ["-i" | files])
+            end
+          end,
+          "format"
         ]
       ]
     ]
@@ -66,7 +82,8 @@ defmodule ZenohexPico.MixProject do
       ],
       test_coverage: [
         ignore_modules: [
-          ZenohexPico.Nif
+          ZenohexPico.Nif,
+          ZenohexPico.AvmEsp32.Test
         ]
       ]
     ]

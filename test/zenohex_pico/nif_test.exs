@@ -43,6 +43,12 @@ defmodule ZenohexPico.NifTest do
         Nif.config_insert(config, @z_config_mode_key, "peer\0ignored")
       end
     end
+
+    test "config_get/2 returns an empty inserted value" do
+      {:ok, config} = Nif.config_default()
+      assert {:ok, config} = Nif.config_insert(config, @z_config_mode_key, "")
+      assert Nif.config_get(config, @z_config_mode_key) == {:ok, ""}
+    end
   end
 
   describe "session open/close" do
@@ -142,8 +148,14 @@ defmodule ZenohexPico.NifTest do
       listen_session: _listen_session,
       connect_session: connect_session
     } do
-      assert Nif.session_get(connect_session, "zenohex_pico/no_responder", 100, query_timeout: 10) ==
+      assert Nif.session_get(connect_session, "zenohex_pico/no_responder", 100) ==
                {:error, :timeout}
+    end
+
+    test "session_get/4 rejects a zero timeout", %{connect_session: connect_session} do
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(connect_session, "zenohex_pico/no_responder", 0)
+      end
     end
 
     test "session_get/4 accepts supported options", %{
@@ -159,8 +171,7 @@ defmodule ZenohexPico.NifTest do
                express: true,
                payload: "query payload",
                priority: :data_high,
-               target: :all,
-               query_timeout: 10
+               target: :all
              ) == {:error, :timeout}
     end
 
@@ -180,6 +191,12 @@ defmodule ZenohexPico.NifTest do
 
       assert_raise ArgumentError, fn ->
         Nif.session_get(connect_session, "zenohex_pico/no_responder", 100, attachment: nil)
+      end
+
+      assert_raise ArgumentError, fn ->
+        Nif.session_get(connect_session, "zenohex_pico/no_responder", 100,
+          accept_replies: :invalid
+        )
       end
 
       assert_raise ArgumentError, fn ->

@@ -1,4 +1,4 @@
-#include <erl_nif.h>
+#include <defaultatoms.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -83,10 +83,9 @@ static void zxp_civil_from_days(int64_t days, uint32_t *year, uint32_t *month, u
   *year = (uint32_t)(calculated_year + (*month <= 2));
 }
 
-bool zxp_timestamp_from_binary(const ErlNifBinary *binary, z_timestamp_t *timestamp)
+bool zxp_timestamp_from_binary(const char *binary, size_t length, z_timestamp_t *timestamp)
 {
-  const uint8_t *data = binary->data;
-  size_t length = binary->size;
+  const uint8_t *data = (const uint8_t *)binary;
   if (length != 63 || data[4] != '-' || data[7] != '-' || data[10] != 'T' || data[13] != ':' ||
       data[16] != ':' || data[19] != '.' || data[29] != 'Z' || data[30] != '/')
   {
@@ -143,7 +142,7 @@ bool zxp_timestamp_from_binary(const ErlNifBinary *binary, z_timestamp_t *timest
   return true;
 }
 
-ERL_NIF_TERM zxp_binary_from_zp_timestamp(ErlNifEnv *env, const z_timestamp_t *timestamp)
+term zxp_binary_from_zp_timestamp(Context *ctx, const z_timestamp_t *timestamp)
 {
   if (timestamp == NULL)
   {
@@ -165,7 +164,7 @@ ERL_NIF_TERM zxp_binary_from_zp_timestamp(ErlNifEnv *env, const z_timestamp_t *t
   zxp_civil_from_days((int64_t)(seconds / 86400), &year, &month, &day);
   if (year > 9999)
   {
-    return zxp_raise(env, __FILE__, __LINE__, "timestamp year out of range");
+    RAISE_ERROR(BADARG_ATOM);
   }
 
   uint64_t seconds_of_day = seconds % 86400;
@@ -184,13 +183,12 @@ ERL_NIF_TERM zxp_binary_from_zp_timestamp(ErlNifEnv *env, const z_timestamp_t *t
                nanos);
   if (length != 31)
   {
-    return zxp_raise(env, __FILE__, __LINE__, "timestamp formatting failed");
+    RAISE_ERROR(BADARG_ATOM);
   }
 
   for (size_t index = 0; index < ZENOH_ID_SIZE; index++)
   {
     snprintf(timestamp_string + 31 + index * 2, 3, "%02x", id.id[index]);
   }
-  return zxp_binary_from_bytes(
-      env, (const uint8_t *)timestamp_string, sizeof(timestamp_string) - 1);
+  return zxp_binary_from_bytes(ctx, timestamp_string, sizeof(timestamp_string) - 1);
 }

@@ -48,7 +48,7 @@ defmodule ZenohexPico do
   @spec get(
           ZenohexPico.Config.t(),
           String.t(),
-          non_neg_integer(),
+          pos_integer(),
           ZenohexPico.Session.get_opts()
         ) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
@@ -61,14 +61,6 @@ defmodule ZenohexPico do
       after
         ZenohexPico.Session.close(session)
       end
-    end
-  end
-
-  if Mix.target() == :avm_esp32 do
-    def start do
-      {:ok, config} = ZenohexPico.Nif.config_default()
-      IO.puts("ZenohexPico! #{inspect(ZenohexPico.Nif.session_open(config))}")
-      :ok
     end
   end
 end

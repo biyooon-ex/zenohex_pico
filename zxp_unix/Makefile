@@ -18,7 +18,7 @@ PRIV_DIR = $(MIX_APP_PATH)/priv
 NIF_SO = $(PRIV_DIR)/zenohex_pico.so
 
 SRC_DIR = .
-SRC_C ?= $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_DIR)/helper/*.c)
+SRC_C ?= $(wildcard $(SRC_DIR)/*.c)
 
 all: $(NIF_SO)
 

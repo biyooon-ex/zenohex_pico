@@ -1,4 +1,5 @@
 #include <erl_nif.h>
+#include <stdbool.h>
 #include <zenoh-pico.h>
 
 extern bool zxp_timestamp_from_binary(const ErlNifBinary *binary, z_timestamp_t *timestamp);

@@ -84,8 +84,7 @@ defmodule ZenohexPico.Session do
           express: boolean(),
           payload: binary(),
           priority: priority(),
-          target: query_target(),
-          query_timeout: non_neg_integer()
+          target: query_target()
         ]
 
   @typedoc """
@@ -162,7 +161,7 @@ defmodule ZenohexPico.Session do
       iex> ZenohexPico.Session.get(session, "key/expr", 100)
       {:ok, [%ZenohexPico.Sample{}]}
   """
-  @spec get(t(), String.t(), non_neg_integer(), get_opts()) ::
+  @spec get(t(), String.t(), pos_integer(), get_opts()) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
           | {:error, :timeout}
           | {:error, reason :: term()}

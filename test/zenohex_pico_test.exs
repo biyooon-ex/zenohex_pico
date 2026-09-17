@@ -12,8 +12,7 @@ defmodule ZenohexPicoTest do
 
     assert :ok = ZenohexPico.put(connect_config, "zenohex_pico/public_api", "payload")
 
-    assert {:error, :timeout} =
-             ZenohexPico.get(connect_config, "zenohex_pico/no_responder", 100, query_timeout: 10)
+    assert {:error, :timeout} = ZenohexPico.get(connect_config, "zenohex_pico/no_responder", 100)
   end
 
   defp peer_config(endpoint_key, endpoint) do
