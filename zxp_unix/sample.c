@@ -1,7 +1,6 @@
 #include <erl_nif.h>
 #include <zenoh-pico.h>
 
-#include "helper/helper.h"
 #include "sample.h"
 #include "timestamp.h"
 #include "zxp_term.h"

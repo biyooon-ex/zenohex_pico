@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <zenoh-pico.h>
 
-#include "helper/helper.h"
 #include "timestamp.h"
 #include "zxp_term.h"
 
