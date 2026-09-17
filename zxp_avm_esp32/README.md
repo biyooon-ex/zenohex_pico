@@ -1,6 +1,8 @@
 # Development with M5STACK CORE S3
 
-## prepare zenoh-pico submodule
+## Setup
+
+1. Prepare the zenoh-pico submodule.
 
 ```
 cd /path/to/zenohex_pico
@@ -9,9 +11,7 @@ mix deps.get
 mix compile # this step prepares zenoh-pico submodule
 ```
 
-## prepare AtomVM
-
-### clone AtomVM
+2. Clone AtomVM and build its Unix artifacts. The build produces `AtomVM/build/libs`, which is required in the next step.
 
 ```
 cd /path/to/repos
@@ -19,13 +19,6 @@ git clone https://github.com/atomvm/AtomVM.git
 cd AtomVM/
 # main branch head commit as of 2026-09-17
 git checkout 0220c78ee9e7cf6c763a278b44d81ce309fcf1ab
-```
-
-### build AtomVM for unix
-
-This step is necessary to prepare `AtomVM/build/libs`, which is used in the following step.
-
-```
 mkdir build
 cd build
 mise use erlang@27.3.4.17
@@ -38,40 +31,23 @@ make -j
 cd ..
 ```
 
-### build AtomVM for the device
-
-#### set target
+3. Build and flash AtomVM for the device.
 
 ```
 source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
 cd src/platforms/esp32/
 idf.py set-target esp32s3
-```
-
-#### menuconfig
-
-```
 idf.py menuconfig
 ```
 
-- Enable LWIP_IPV6
-  - Zenoh Pico requires IPv6.
-- Change ESP_MAIN_TASK_STACK_SIZE from 3584 to 8192
-  - ZenohexPico on the ESP32-S3 requires a larger main task stack than the default 3584 bytes.
-
-#### build
+In `idf.py menuconfig`, enable `LWIP_IPV6` and set `ESP_MAIN_TASK_STACK_SIZE` to `8192`.
 
 ```
 idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_component;/path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_component" build
-```
-
-### flash AtomVM to the device
-
-```
 idf.py -p /dev/ttyACM0 flash
 ```
 
-## prepare avm_deps
+4. Prepare `avm_deps` and flash the Elixir application.
 
 ```
 cd /path/to/zenohex_pico
@@ -80,11 +56,6 @@ cp /path/to/AtomVM/build/libs/atomvmlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/eavmlib/src/eavmlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/estdlib/src/estdlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/exavmlib/lib/exavmlib.avm avm_deps/
-```
-
-## flash Elixir app to the device
-
-```
 export MIX_TARGET=avm_esp32
 mix deps.get
 # source is needed for `mix atomvm.esp32.flash`
