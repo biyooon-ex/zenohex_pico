@@ -51,7 +51,7 @@ cd ..
 #### set target
 
 ```
-source "~/.espressif/tools/activate_idf_v5.5.5.sh"
+source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
 cd src/platforms/esp32/
 idf.py set-target esp32s3
 ```
@@ -82,7 +82,7 @@ idf.py -p /dev/ttyACM0 flash
 ### prepare avm_deps
 
 ```
-cd zenohex_pico
+cd /path/to/zenohex_pico
 mkdir -p avm_deps
 cp /path/to/AtomVM/build/libs/atomvmlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/eavmlib/src/eavmlib.avm avm_deps/
@@ -96,7 +96,7 @@ cp /path/to/AtomVM/build/libs/exavmlib/lib/exavmlib.avm avm_deps/
 export MIX_TARGET=avm_esp32
 mix deps.get
 # source is needed for `mix atomvm.esp32.flash`
-source "~/.espressif/tools/activate_idf_v5.5.5.sh"
+source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
 # `mix flash` is an alias of `mix atomvm.packbeam` and `mix atomvm.esp32.flash --port /dev/ttyACM0 --baud 921600`
 mix flash
 ```
