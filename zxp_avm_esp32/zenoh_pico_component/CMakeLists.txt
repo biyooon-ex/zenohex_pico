@@ -7,41 +7,36 @@ if(NOT EXISTS "${ZENOHPICO_SUBMODULE_DIR}/CMakeLists.txt")
 		"zenoh-pico submodule is missing at ${ZENOHPICO_SUBMODULE_DIR}. Run at repo root: git submodule update --init --recursive")
 endif()
 
-# ESP-IDF first evaluates components in script mode to collect requirements.
-# add_subdirectory() is available only during the subsequent configure phase.
+set(ZENOHPICO_IDF_REQUIRES
+	esp_driver_uart
+	esp_hw_support
+	freertos
+	lwip
+)
+
+# ESP-IDF evaluates each component twice so it can first collect all component
+# dependencies, resolve the build graph, and then create targets in dependency
+# order. The first pass uses CMake script mode, where add_subdirectory() is
+# unavailable.
 if(CMAKE_SCRIPT_MODE_FILE)
-	idf_component_register(
-		REQUIRES
-			esp_driver_uart
-			esp_hw_support
-			freertos
-			lwip
-	)
+	# This records dependencies only; it does not create the component target.
+	idf_component_register(REQUIRES ${ZENOHPICO_IDF_REQUIRES})
 	return()
 endif()
 
-# Let zenoh-pico configure its own feature defaults and generated headers with
-# the ESP-IDF toolchain instead of duplicating its configuration here.
-set(ZP_PLATFORM espidf CACHE STRING "zenoh-pico platform profile" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static zenoh-pico library" FORCE)
+# Build static zenoh-pico with the ESP-IDF toolchain. zenoh-pico configures its
+# own feature defaults and generated headers instead of duplicating them here.
+set(ZP_PLATFORM espidf)
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(
 	"${ZENOHPICO_SUBMODULE_DIR}"
 	"${CMAKE_CURRENT_BINARY_DIR}/zenoh-pico"
 )
 
-idf_component_register(
-	REQUIRES
-		esp_driver_uart
-		esp_hw_support
-		freertos
-		lwip
-)
+# This creates the component target during ESP-IDF's normal configure phase.
+idf_component_register(REQUIRES ${ZENOHPICO_IDF_REQUIRES})
 
-target_link_libraries(zenohpico_static
-	PUBLIC
-		idf::esp_driver_uart
-		idf::esp_hw_support
-		idf::freertos
-		idf::lwip
-)
+foreach(component IN LISTS ZENOHPICO_IDF_REQUIRES)
+	target_link_libraries(zenohpico_static PUBLIC idf::${component})
+endforeach()
 target_link_libraries(${COMPONENT_LIB} INTERFACE zenohpico_static)
