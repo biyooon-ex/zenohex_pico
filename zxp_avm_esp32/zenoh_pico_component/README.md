@@ -83,48 +83,25 @@ Enable IPv6 in your ESP-IDF project configuration:
 
 - `CONFIG_LWIP_IPV6=y`
 
-### 5) Control Zenoh log levels with `idf.py -D`
+### 5) Control the Zenoh log level with `idf.py -D`
 
-This component defines the following macros only when each CMake option is
-enabled:
-
-- `ZENOH_LOG_(TRACE|DEBUG|INFO|WARN|ERROR)`
-
-You can control it directly from `idf.py`:
+Pass zenoh-pico's `ZENOH_LOG` CMake variable directly:
 
 ```bash
-# Enable selected log levels
-idf.py -DZENOH_LOG_TRACE=ON build
-
-# Disable a level (default is OFF for all)
-idf.py -DZENOH_LOG_TRACE=OFF build
+# Valid values: TRACE, DEBUG, INFO, WARN, ERROR
+idf.py -DZENOH_LOG=TRACE build
 ```
 
 ## Source Selection Policy
 
-This wrapper compiles only the following source groups:
-
-- `src/api`
-- `src/collections`
-- `src/link`
-- `src/net`
-- `src/protocol`
-- `src/runtime`
-- `src/session`
-- `src/transport`
-- `src/utils`
-- `src/system/common`
-- `src/system/espidf`
-
-All other platform-specific implementations (`unix`, `windows`, `zephyr`, `freertos`, `rpi_pico`, `emscripten`) are excluded.
-
-Reasoning:
-
-- The goal of this wrapper is ESP-IDF-only integration, so non-ESP-IDF backends are intentionally excluded.
-- Building multiple platform backends together can introduce duplicate symbols and incompatible system calls.
-- Limiting the build to `common + espidf` keeps behavior aligned with the runtime environment actually used on ESP chips.
-- Keeping source selection explicit makes upstream updates easier to audit and reduces accidental platform regressions.
+This wrapper adds zenoh-pico to the ESP-IDF CMake tree with
+`ZP_PLATFORM=espidf`. zenoh-pico selects the ESP-IDF sources and excludes
+other platform backends.
 
 ## Notes
 
-- Feature definitions follow upstream defaults in `zenoh-pico/include/zenoh-pico/config.h`.
+- `zenoh-pico/config.h` is generated from
+	`zenoh-pico/include/zenoh-pico/config.h.in` in zenoh-pico's directory within
+	the ESP-IDF build tree; no `zxp_unix` build is required.
+- Feature definitions use the upstream CMake defaults and can be overridden with
+	ESP-IDF CMake cache variables such as `-DZ_FEATURE_QUERY=0`.

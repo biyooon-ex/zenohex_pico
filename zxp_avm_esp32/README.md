@@ -25,7 +25,7 @@ mise use erlang@27.3.4.17
 mise use elixir@1.18.5-otp-27
 mix local.hex
 mix local.rebar
-export PATH="$MIX_HOME/elixir/1-18:$PATH"
+export PATH="$MIX_HOME/elixir/1-18-otp-27:$PATH"
 cmake ..
 make -j
 cd ..

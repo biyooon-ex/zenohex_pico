@@ -7,66 +7,29 @@ if(NOT EXISTS "${ZENOHPICO_SUBMODULE_DIR}/CMakeLists.txt")
 		"zenoh-pico submodule is missing at ${ZENOHPICO_SUBMODULE_DIR}. Run at repo root: git submodule update --init --recursive")
 endif()
 
-# Keep feature defaults aligned with upstream by using its committed headers
-# and only compiling the ESP-IDF + common implementation layers here.
-set(ZENOHPICO_SRCS)
+# ESP-IDF first evaluates components in script mode to collect requirements.
+# add_subdirectory() is available only during the subsequent configure phase.
+if(CMAKE_SCRIPT_MODE_FILE)
+	idf_component_register(
+		REQUIRES
+			esp_driver_uart
+			esp_hw_support
+			freertos
+			lwip
+	)
+	return()
+endif()
 
-file(GLOB_RECURSE ZENOHPICO_API_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/api/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_API_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_COLLECTIONS_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/collections/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_COLLECTIONS_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_LINK_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/link/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_LINK_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_NET_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/net/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_NET_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_PROTOCOL_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/protocol/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_PROTOCOL_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_RUNTIME_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/runtime/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_RUNTIME_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_SESSION_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/session/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SESSION_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_TRANSPORT_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/transport/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_TRANSPORT_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_UTILS_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/utils/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_UTILS_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_SYSTEM_COMMON_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/system/common/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_COMMON_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_SYSTEM_ESPIDF_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/system/espidf/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_ESPIDF_SRCS})
-list(APPEND ZENOHPICO_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/system/socket/esp32.c")
-
-# zenoh-pico creates build/include when built with its own CMake project, but
-# ESP-IDF validates component include directories during configuration first.
-# Create only the directory here so existing generated headers are preserved.
-file(MAKE_DIRECTORY "${ZENOHPICO_SUBMODULE_DIR}/build/include")
+# Let zenoh-pico configure its own feature defaults and generated headers with
+# the ESP-IDF toolchain instead of duplicating its configuration here.
+set(ZP_PLATFORM espidf CACHE STRING "zenoh-pico platform profile" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static zenoh-pico library" FORCE)
+add_subdirectory(
+	"${ZENOHPICO_SUBMODULE_DIR}"
+	"${CMAKE_CURRENT_BINARY_DIR}/zenoh-pico"
+)
 
 idf_component_register(
-	SRCS ${ZENOHPICO_SRCS}
-	INCLUDE_DIRS
-		"${ZENOHPICO_SUBMODULE_DIR}/include"
-		"${ZENOHPICO_SUBMODULE_DIR}/build/include"
 	REQUIRES
 		esp_driver_uart
 		esp_hw_support
@@ -74,13 +37,11 @@ idf_component_register(
 		lwip
 )
 
-target_compile_definitions(${COMPONENT_LIB} PUBLIC ZENOH_ESPIDF)
-target_compile_features(${COMPONENT_LIB} PUBLIC c_std_11)
-
-set(ZENOH_LOG_LEVELS TRACE DEBUG INFO WARN ERROR)
-foreach(level IN LISTS ZENOH_LOG_LEVELS)
-	option(ZENOH_LOG_${level} "Enable ZENOH_LOG_${level}" OFF)
-	if(ZENOH_LOG_${level})
-		target_compile_definitions(${COMPONENT_LIB} PUBLIC ZENOH_LOG_${level})
-	endif()
-endforeach()
+target_link_libraries(zenohpico_static
+	PUBLIC
+		idf::esp_driver_uart
+		idf::esp_hw_support
+		idf::freertos
+		idf::lwip
+)
+target_link_libraries(${COMPONENT_LIB} INTERFACE zenohpico_static)
