@@ -1,6 +1,6 @@
 idf_component_register(
     # ソース
-    SRCS "zxp_term.c" "config.c" "query.c" "sample.c" "session.c" "session_option.c" "time_compat.c" "timestamp.c" "zenohex_pico.c"
+    SRCS "zxp_term.c" "config.c" "query.c" "sample.c" "session.c" "session_option.c" "helper.c" "timestamp.c" "zenohex_pico.c"
     # 依存関係
     PRIV_REQUIRES "libatomvm" "zenoh_pico_component"
     # オブジェクトファイルを強制的にリンクするオプション

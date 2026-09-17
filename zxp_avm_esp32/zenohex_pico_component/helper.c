@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <time.h>
 
-#include "time_compat.h"
+#include "helper.h"
 
 /*
  * Convert an absolute CLOCK_MONOTONIC deadline to an equivalent absolute

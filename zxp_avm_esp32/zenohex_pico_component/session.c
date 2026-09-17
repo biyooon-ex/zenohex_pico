@@ -12,11 +12,11 @@
 #include <zenoh-pico.h>
 
 #include "config.h"
+#include "helper.h"
 #include "query.h"
 #include "sample.h"
 #include "session.h"
 #include "session_option.h"
-#include "time_compat.h"
 #include "zxp_term.h"
 
 #define ZXP_SESSION_GET_INITIAL_REPLY_CAPACITY 4
