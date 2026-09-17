@@ -1,7 +1,7 @@
 defmodule ZenohexPico.AvmEsp32.Test do
   @moduledoc false
 
-  if Mix.target() == :avm_esp32 do
+  if Mix.target() == :avm_esp32 and Mix.env() == :test do
     @compile {:no_warn_undefined, [:esp]}
     @host_ipv4_address (
                          ipv4_address = ~S/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/
