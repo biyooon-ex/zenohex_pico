@@ -56,7 +56,9 @@ defmodule ZenohexPico.AvmEsp32.Test do
       {:ok, config} =
         ZenohexPico.Config.insert(config, :connect, "tcp/#{@host_ipv4_address}:7447")
 
-      :ok = ZenohexPico.put(config, "key/expr", "from M5STACK CORE S3")
+      for i <- 1..10 do
+        :ok = ZenohexPico.put(config, "key/expr", "from M5STACK CORE S3, #{i}")
+      end
     end
   else
     def start_subscriber_on_unix() do
@@ -66,12 +68,15 @@ defmodule ZenohexPico.AvmEsp32.Test do
       {:ok, session} = ZenohexPico.Session.open(config)
       {:ok, subscriber} = ZenohexPico.Session.declare_subscriber(session, "key/expr")
 
-      receive do
-        %ZenohexPico.Sample{} = sample ->
-          IO.puts("#{inspect(sample)}")
-          :ok = ZenohexPico.Subscriber.undeclare(subscriber)
-          :ok = ZenohexPico.Session.close(session)
+      for _ <- 1..10 do
+        receive do
+          %ZenohexPico.Sample{} = sample ->
+            IO.puts("#{inspect(sample)}")
+        end
       end
+
+      :ok = ZenohexPico.Subscriber.undeclare(subscriber)
+      :ok = ZenohexPico.Session.close(session)
     end
   end
 end
