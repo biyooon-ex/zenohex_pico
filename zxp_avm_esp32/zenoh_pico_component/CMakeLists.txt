@@ -7,75 +7,40 @@ if(NOT EXISTS "${ZENOHPICO_SUBMODULE_DIR}/CMakeLists.txt")
 		"zenoh-pico submodule is missing at ${ZENOHPICO_SUBMODULE_DIR}. Run at repo root: git submodule update --init --recursive")
 endif()
 
-# Keep feature defaults aligned with upstream by using its committed headers
-# and only compiling the ESP-IDF + common implementation layers here.
-set(ZENOHPICO_SRCS)
-
-file(GLOB_RECURSE ZENOHPICO_API_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/api/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_API_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_COLLECTIONS_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/collections/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_COLLECTIONS_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_LINK_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/link/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_LINK_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_NET_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/net/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_NET_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_PROTOCOL_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/protocol/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_PROTOCOL_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_RUNTIME_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/runtime/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_RUNTIME_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_SESSION_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/session/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SESSION_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_TRANSPORT_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/transport/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_TRANSPORT_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_UTILS_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/utils/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_UTILS_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_SYSTEM_COMMON_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/system/common/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_COMMON_SRCS})
-
-file(GLOB_RECURSE ZENOHPICO_SYSTEM_ESPIDF_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/system/espidf/*.c")
-list(APPEND ZENOHPICO_SRCS ${ZENOHPICO_SYSTEM_ESPIDF_SRCS})
-list(APPEND ZENOHPICO_SRCS
-	"${ZENOHPICO_SUBMODULE_DIR}/src/system/socket/esp32.c")
-
-idf_component_register(
-	SRCS ${ZENOHPICO_SRCS}
-	INCLUDE_DIRS
-		"${ZENOHPICO_SUBMODULE_DIR}/include"
-		"${ZENOHPICO_SUBMODULE_DIR}/build/include"
-	REQUIRES
-		esp_driver_uart
-		esp_hw_support
-		freertos
-		lwip
+set(ZENOHPICO_IDF_REQUIRES
+	esp_driver_uart
+	esp_hw_support
+	freertos
+	lwip
 )
 
-target_compile_definitions(${COMPONENT_LIB} PUBLIC ZENOH_ESPIDF)
-target_compile_features(${COMPONENT_LIB} PUBLIC c_std_11)
+# ESP-IDF evaluates each component twice so it can first collect all component
+# dependencies, resolve the build graph, and then create targets in dependency
+# order. The first pass uses CMake script mode, where add_subdirectory() is
+# unavailable.
+if(CMAKE_SCRIPT_MODE_FILE)
+	# This records dependencies only; it does not create the component target.
+	idf_component_register(REQUIRES ${ZENOHPICO_IDF_REQUIRES})
+	return()
+endif()
 
-set(ZENOH_LOG_LEVELS TRACE DEBUG INFO WARN ERROR)
-foreach(level IN LISTS ZENOH_LOG_LEVELS)
-	option(ZENOH_LOG_${level} "Enable ZENOH_LOG_${level}" OFF)
-	if(ZENOH_LOG_${level})
-		target_compile_definitions(${COMPONENT_LIB} PUBLIC ZENOH_LOG_${level})
-	endif()
+# Build static zenoh-pico with the ESP-IDF toolchain. zenoh-pico configures its
+# own feature defaults and generated headers instead of duplicating them here.
+
+# zenoh-pico initializes ZP_PLATFORM in the CMake cache. A normal variable can
+# be discarded while that entry is created, so store the ESP-IDF profile in the CMake cache.
+set(ZP_PLATFORM espidf CACHE STRING "Built-in or external platform profile" FORCE)
+
+set(BUILD_SHARED_LIBS OFF)
+add_subdirectory(
+	"${ZENOHPICO_SUBMODULE_DIR}"
+	"${CMAKE_CURRENT_BINARY_DIR}/zenoh-pico"
+)
+
+# This creates the component target during ESP-IDF's normal configure phase.
+idf_component_register(REQUIRES ${ZENOHPICO_IDF_REQUIRES})
+
+foreach(require IN LISTS ZENOHPICO_IDF_REQUIRES)
+	target_link_libraries(zenohpico_static PRIVATE idf::${require})
 endforeach()
+target_link_libraries(${COMPONENT_LIB} INTERFACE zenohpico_static)
