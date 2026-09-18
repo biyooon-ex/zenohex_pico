@@ -23,8 +23,19 @@ mkdir build
 cd build
 mise use erlang@27.3.4.17
 mise use elixir@1.18.5-otp-27
-mix local.hex
-mix local.rebar
+```
+
+Confirm that `MIX_HOME` has changed.
+
+```
+echo "$MIX_HOME"
+```
+
+Then build. The `export` command adds `rebar3` to `PATH`.
+
+```
+mix local.hex --force
+mix local.rebar --force
 export PATH="$MIX_HOME/elixir/1-18-otp-27:$PATH"
 cmake ..
 make -j
