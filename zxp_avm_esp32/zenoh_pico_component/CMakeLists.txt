@@ -26,7 +26,11 @@ endif()
 
 # Build static zenoh-pico with the ESP-IDF toolchain. zenoh-pico configures its
 # own feature defaults and generated headers instead of duplicating them here.
-set(ZP_PLATFORM espidf)
+
+# zenoh-pico initializes ZP_PLATFORM in the CMake cache. A normal variable can
+# be discarded while that entry is created, so set the ESP-IDF profile there.
+set(ZP_PLATFORM espidf CACHE STRING "Built-in or external platform profile" FORCE)
+
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(
 	"${ZENOHPICO_SUBMODULE_DIR}"
