@@ -28,7 +28,7 @@ endif()
 # own feature defaults and generated headers instead of duplicating them here.
 
 # zenoh-pico initializes ZP_PLATFORM in the CMake cache. A normal variable can
-# be discarded while that entry is created, so set the ESP-IDF profile there.
+# be discarded while that entry is created, so store the ESP-IDF profile in the CMake cache.
 set(ZP_PLATFORM espidf CACHE STRING "Built-in or external platform profile" FORCE)
 
 set(BUILD_SHARED_LIBS OFF)
