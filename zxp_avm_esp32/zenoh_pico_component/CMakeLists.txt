@@ -40,7 +40,7 @@ add_subdirectory(
 # This creates the component target during ESP-IDF's normal configure phase.
 idf_component_register(REQUIRES ${ZENOHPICO_IDF_REQUIRES})
 
-foreach(component IN LISTS ZENOHPICO_IDF_REQUIRES)
-	target_link_libraries(zenohpico_static PUBLIC idf::${component})
+foreach(require IN LISTS ZENOHPICO_IDF_REQUIRES)
+	target_link_libraries(zenohpico_static PRIVATE idf::${require})
 endforeach()
 target_link_libraries(${COMPONENT_LIB} INTERFACE zenohpico_static)
