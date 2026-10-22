@@ -6,7 +6,6 @@
 
 ```
 cd /path/to/zenohex_pico
-export MIX_TARGET=avm_esp32
 mix deps.get
 mix compile # this step prepares zenoh-pico submodule
 ```
@@ -67,7 +66,6 @@ cp /path/to/AtomVM/build/libs/atomvmlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/eavmlib/src/eavmlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/estdlib/src/estdlib.avm avm_deps/
 cp /path/to/AtomVM/build/libs/exavmlib/lib/exavmlib.avm avm_deps/
-export MIX_TARGET=avm_esp32
 mix deps.get
 # source is needed for `mix atomvm.esp32.flash`
 source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
