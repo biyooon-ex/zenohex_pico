@@ -17,8 +17,7 @@ mix compile # this step prepares zenoh-pico submodule
 cd /path/to/repos
 git clone https://github.com/atomvm/AtomVM.git
 cd AtomVM/
-# main branch head commit as of 2026-09-17
-git checkout 0220c78ee9e7cf6c763a278b44d81ce309fcf1ab
+git checkout 0.7.0-beta.0
 mkdir build
 cd build
 mise use erlang@27.3.4.17
@@ -55,6 +54,9 @@ In `idf.py menuconfig`, enable `LWIP_IPV6` and set `ESP_MAIN_TASK_STACK_SIZE` to
 
 ```
 idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_component;/path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_component" build
+# If build failed with following messages, you need to follow https://github.com/biyooon-ex/zenohex_pico/issues/15.
+# > Error: app partition is too small for binary atomvm-esp32.bin size 0x1c0920:
+# >  - Part 'factory' 0/0 @ 0x10000 size 0x1c0000 (overflow 0x920)
 idf.py -p /dev/ttyACM0 flash
 ```
 
