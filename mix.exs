@@ -36,7 +36,7 @@ defmodule ZenohexPico.MixProject do
             :test -> ZenohexPico.AvmEsp32.Test
             _ -> ZenohexPico.AvmEsp32
           end,
-        flash_offset: 0x250000
+        flash_offset: 0x290000
       ],
       aliases: [
         flash: [
