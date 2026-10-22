@@ -12,10 +12,6 @@ defmodule ZenohexPico.MixProject do
     ] ++ project(Mix.target())
   end
 
-  def cli do
-    [default_target: :avm_esp32]
-  end
-
   def application do
     [
       extra_applications: [:logger]
