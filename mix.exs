@@ -25,9 +25,9 @@ defmodule ZenohexPico.MixProject do
   defp project(:avm_esp32) do
     [
       deps: [
-        {:exatomvm,
-         git: "https://github.com/atomvm/exatomvm.git",
-         ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8"}
+        {:exatomvm, github: "atomvm/exatomvm", runtime: false, override: true},
+        {:atomvm, "~> 0.7.0-beta.0", optional: true, runtime: false},
+        {:pythonx, "~> 0.4.0"}
       ],
       compilers: [:zenoh_pico] ++ Mix.compilers(),
       atomvm: [
