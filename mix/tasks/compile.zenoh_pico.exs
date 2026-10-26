@@ -14,21 +14,38 @@ defmodule Mix.Tasks.Compile.ZenohPico do
   end
 
   defp initialize_submodule do
-    if Mix.shell().yes?("zenoh-pico submodule is missing. Initialize it now?", default: :no) do
-      case System.cmd("git", ["submodule", "update", "--init", "--recursive"],
-             stderr_to_stdout: true
-           ) do
-        {output, 0} ->
-          IO.write(output)
+    cond do
+      ci?() ->
+        Mix.shell().info("CI detected; initializing zenoh-pico submodule.")
+        initialize_submodule_impl()
 
-        {output, _status} ->
-          Mix.raise("Failed to initialize zenoh-pico submodule:\n#{output}")
-      end
-    else
-      Mix.raise("""
-      zenoh-pico submodule is missing. Run at the repository root:
-        git submodule update --init --recursive
-      """)
+      Mix.shell().yes?("zenoh-pico submodule is missing. Initialize it now?", default: :no) ->
+        initialize_submodule_impl()
+
+      true ->
+        Mix.raise("""
+        zenoh-pico submodule is missing. Run at the repository root:
+          git submodule update --init --recursive
+        """)
+    end
+  end
+
+  defp initialize_submodule_impl do
+    case System.cmd("git", ["submodule", "update", "--init", "--recursive"],
+           stderr_to_stdout: true
+         ) do
+      {output, 0} ->
+        IO.write(output)
+
+      {output, _status} ->
+        Mix.raise("Failed to initialize zenoh-pico submodule:\n#{output}")
+    end
+  end
+
+  defp ci? do
+    case System.get_env("ZENOHEX_PICO_CI") do
+      nil -> false
+      value -> String.downcase(value) not in ["", "false", "0"]
     end
   end
 end
