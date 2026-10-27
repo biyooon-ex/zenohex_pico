@@ -15,8 +15,8 @@ defmodule Mix.Tasks.Compile.ZenohPico do
 
   defp initialize_submodule do
     cond do
-      ci?() ->
-        Mix.shell().info("CI detected; initializing zenoh-pico submodule.")
+      auto_init_submodule?() ->
+        Mix.shell().info("Automatic submodule initialization enabled.")
         initialize_submodule_impl()
 
       Mix.shell().yes?("zenoh-pico submodule is missing. Initialize it now?", default: :no) ->
@@ -42,8 +42,8 @@ defmodule Mix.Tasks.Compile.ZenohPico do
     end
   end
 
-  defp ci? do
-    case System.get_env("ZENOHEX_PICO_CI") do
+  defp auto_init_submodule? do
+    case System.get_env("ZENOHEX_PICO_AUTO_INIT_SUBMODULE") do
       nil -> false
       value -> String.downcase(value) not in ["", "false", "0"]
     end
