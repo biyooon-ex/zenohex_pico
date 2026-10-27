@@ -1,11 +1,14 @@
 # Development with M5STACK CORE S3
 
-## Setup
+## Build and flash AtomVM
 
 1. Prepare the zenoh-pico submodule.
 
 ```
-cd /path/to/zenohex_pico
+cd /path/to/repos
+git clone https://github.com/biyooon-ex/zenohex_pico.git
+cd zenohex_pico
+git checkout tag # FIXME
 export MIX_TARGET=avm_esp32
 mix deps.get
 mix compile # this step prepares zenoh-pico submodule
@@ -17,7 +20,8 @@ mix compile # this step prepares zenoh-pico submodule
 cd /path/to/repos
 git clone https://github.com/atomvm/AtomVM.git
 cd AtomVM/
-git checkout 0.7.0-beta.0
+# main branch head commit as of 2026-10-27
+git checkout 3a9ea46b8cf28066caf126c46119dc58f950de5f
 mkdir build
 cd build
 mise use erlang@27.3.4.17
@@ -60,7 +64,9 @@ idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_co
 idf.py -p /dev/ttyACM0 flash
 ```
 
-4. Prepare `avm_deps` and flash the Elixir application.
+## Flash ZenohexPico Application
+
+1. Prepare `avm_deps` and flash ZenohexPico application.
 
 ```
 cd /path/to/zenohex_pico
