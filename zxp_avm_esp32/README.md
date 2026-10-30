@@ -1,11 +1,14 @@
 # Development with M5STACK CORE S3
 
-## Setup
+## Build and flash AtomVM
 
 1. Prepare the zenoh-pico submodule.
 
 ```
-cd /path/to/zenohex_pico
+cd /path/to/repos
+git clone https://github.com/biyooon-ex/zenohex_pico.git
+cd zenohex_pico
+git checkout tag # FIXME
 export MIX_TARGET=avm_esp32
 mix deps.get
 mix compile # this step prepares zenoh-pico submodule
@@ -17,8 +20,8 @@ mix compile # this step prepares zenoh-pico submodule
 cd /path/to/repos
 git clone https://github.com/atomvm/AtomVM.git
 cd AtomVM/
-# main branch head commit as of 2026-09-17
-git checkout 0220c78ee9e7cf6c763a278b44d81ce309fcf1ab
+# main branch head commit as of 2026-10-27
+git checkout 3a9ea46b8cf28066caf126c46119dc58f950de5f
 mkdir build
 cd build
 mise use erlang@27.3.4.17
@@ -55,10 +58,15 @@ In `idf.py menuconfig`, enable `LWIP_IPV6` and set `ESP_MAIN_TASK_STACK_SIZE` to
 
 ```
 idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_component;/path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_component" build
+# If build failed with following messages, you need to follow https://github.com/biyooon-ex/zenohex_pico/issues/15.
+# > Error: app partition is too small for binary atomvm-esp32.bin size 0x1c0920:
+# >  - Part 'factory' 0/0 @ 0x10000 size 0x1c0000 (overflow 0x920)
 idf.py -p /dev/ttyACM0 flash
 ```
 
-4. Prepare `avm_deps` and flash the Elixir application.
+## Flash ZenohexPico Application
+
+1. Prepare `avm_deps` and flash ZenohexPico application.
 
 ```
 cd /path/to/zenohex_pico

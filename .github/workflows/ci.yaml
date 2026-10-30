@@ -28,6 +28,10 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Compute CI YAML hash
+        id: ci-yaml-hash
+        run: echo "sha=${{ hashFiles('.github/workflows/ci.yaml') }}" >> "$GITHUB_OUTPUT"
+
       - name: Get zenoh-pico revision
         id: zenoh-pico-revision
         run: echo "sha=$(git -C zenoh-pico rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -45,10 +49,10 @@ jobs:
           path: |
             deps
             _build
-          key: deps-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('**/*.lock') }}
+          key: deps-${{ steps.ci-yaml-hash.outputs.sha }}-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('**/*.lock') }}
           restore-keys: |
-            deps-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('**/*.lock') }}
-            deps-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-
+            deps-${{ steps.ci-yaml-hash.outputs.sha }}-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('**/*.lock') }}
+            deps-${{ steps.ci-yaml-hash.outputs.sha }}-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-
 
       - name: Cache compiled zenoh-pico lib
         id: zenoh-pico-lib-cache
@@ -56,7 +60,7 @@ jobs:
         with:
           path: |
             zenoh-pico/build
-          key: zenoh-pico-lib-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.zenoh-pico-revision.outputs.sha }}-${{ hashFiles('zxp_unix/Makefile') }}
+          key: zenoh-pico-lib-${{ steps.ci-yaml-hash.outputs.sha }}-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.zenoh-pico-revision.outputs.sha }}-${{ hashFiles('zxp_unix/Makefile') }}
 
       - name: Install deps
         if: steps.deps-cache.outputs.cache-hit != 'true'
@@ -79,7 +83,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: priv/plts
-          key: dialyzer-plts-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('mix.exs', 'mix.lock') }}
+          key: dialyzer-plts-${{ steps.ci-yaml-hash.outputs.sha }}-${{ runner.os }}-${{ steps.setup-beam.outputs.otp-version }}-${{ steps.setup-beam.outputs.elixir-version }}-${{ hashFiles('mix.exs', 'mix.lock') }}
 
       - name: Run Dialyzer
         run: mix dialyzer
