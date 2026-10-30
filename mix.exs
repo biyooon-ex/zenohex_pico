@@ -19,6 +19,13 @@ defmodule ZenohexPico.MixProject do
   end
 
   defp project(:avm_esp32) do
+    port = fn ->
+      case :os.type() do
+        {:unix, :linux} -> "/dev/ttyACM0"
+        {:unix, :darwin} -> "/dev/cu.usbmodem2101"
+      end
+    end
+
     [
       deps: [
         {:exatomvm, github: "atomvm/exatomvm", runtime: false, override: true},
@@ -37,7 +44,7 @@ defmodule ZenohexPico.MixProject do
       aliases: [
         flash: [
           "atomvm.packbeam",
-          "atomvm.esp32.flash --port /dev/ttyACM0 --baud 921600"
+          "atomvm.esp32.flash --port #{port.()} --baud 921600"
         ],
         format: [
           fn _ ->
