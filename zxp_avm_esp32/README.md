@@ -64,6 +64,19 @@ idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_co
 idf.py -p /dev/ttyACM0 flash
 ```
 
+## Make release artifact zip
+
+1. Create artifact zip.
+
+```
+cd /path/to/AtomVM/src/platforms/esp32/build
+cp /path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_atomvm_artifact.sh .
+# this script creates zip file under the same directory
+./zenohex_pico_atomvm_artifact.sh
+```
+
+2. Upload the zip to Github release
+
 ## Flash ZenohexPico Application
 
 1. Prepare `avm_deps` and flash ZenohexPico application.
