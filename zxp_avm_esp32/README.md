@@ -64,6 +64,8 @@ idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_co
 idf.py -p /dev/ttyACM0 flash
 ```
 
+On macOS, use your board's serial device path (for example, `/dev/cu.usbmodem...` or `/dev/cu.usbserial...`) instead of `/dev/ttyACM0`.
+
 ## Make release artifact zip
 
 1. Create artifact zip.
