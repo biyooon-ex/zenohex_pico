@@ -10,12 +10,17 @@ case "$(pwd -P)" in
         ;;
 esac
 
-ARTIFACT_DIR=zenohex_pico_atomvm_artifact
+ZENOH_PICO_SOURCE_DIR="$(sed -n 's/^# Install script for directory: //p' esp-idf/zenoh_pico_component/zenoh-pico/cmake_install.cmake)"
+ZENOH_PICO_VERSION="$(git -C "$ZENOH_PICO_SOURCE_DIR" describe --tags --always --dirty)"
+ZENOH_PICO_COMMIT="$(git -C "$ZENOH_PICO_SOURCE_DIR" rev-parse --short=8 HEAD)"
+
+ARTIFACT_DIR=zenohex_pico_atomvm_artifact_zenoh-pico-${ZENOH_PICO_VERSION}-${ZENOH_PICO_COMMIT}
+ZIP_FILE="${ARTIFACT_DIR}.zip"
 
 test -d "$ARTIFACT_DIR" && rm -r -- "$ARTIFACT_DIR"
 mkdir -p "$ARTIFACT_DIR"
 
-cp flash_args $ARTIFACT_DIR/
+cp flash_args "$ARTIFACT_DIR/"
 sed \
     -e 's|bootloader/bootloader.bin|bootloader.bin|' \
     -e 's|partition_table/partition-table.bin|partition-table.bin|' \
@@ -23,10 +28,10 @@ sed \
     "$ARTIFACT_DIR/flash_args" > "$ARTIFACT_DIR/flash_args.tmp"
 mv "$ARTIFACT_DIR/flash_args.tmp" "$ARTIFACT_DIR/flash_args"
 
-cp bootloader/bootloader.bin $ARTIFACT_DIR/
-cp atomvm-esp32.bin $ARTIFACT_DIR/
-cp partition_table/partition-table.bin $ARTIFACT_DIR/
-cp ../../../../build/libs/esp32boot/esp32boot.avm $ARTIFACT_DIR/
+cp bootloader/bootloader.bin "$ARTIFACT_DIR/"
+cp atomvm-esp32.bin "$ARTIFACT_DIR/"
+cp partition_table/partition-table.bin "$ARTIFACT_DIR/"
+cp ../../../../build/libs/esp32boot/esp32boot.avm "$ARTIFACT_DIR/"
 
 cat > "$ARTIFACT_DIR/README.md" <<EOF
 # How to flash
@@ -38,6 +43,6 @@ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_r
 \`\`\`
 EOF
 
-rm -f -- "${ARTIFACT_DIR}.zip"
-zip -r "${ARTIFACT_DIR}.zip" "$ARTIFACT_DIR"
+rm -f -- "$ZIP_FILE"
+zip -r "$ZIP_FILE" "$ARTIFACT_DIR"
 rm -r -- "$ARTIFACT_DIR"
