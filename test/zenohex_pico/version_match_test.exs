@@ -3,6 +3,7 @@ defmodule ZenohexPico.VersionMatchTest do
 
   @mise_path "mise.toml"
   @ci_path ".github/workflows/ci.yaml"
+  @readme_path "README.md"
   @esp_idf_cmake_path "zxp_avm_esp32/zenoh_pico_component/CMakeLists.txt"
   @esp_idf_readme_path "zxp_avm_esp32/zenoh_pico_component/README.md"
 
@@ -20,11 +21,13 @@ defmodule ZenohexPico.VersionMatchTest do
   test "zenoh-pico clone instructions use the Mix task's version" do
     zenoh_pico_version = Mix.Tasks.Compile.ZenohPico.zenoh_pico_version()
     ci = File.read!(@ci_path)
+    readme = File.read!(@readme_path)
     esp_idf_cmake = File.read!(@esp_idf_cmake_path)
     esp_idf_readme = File.read!(@esp_idf_readme_path)
     clone_version_pattern = ~r/git clone --branch\s+([^\s]+)/
 
     assert zenoh_pico_version == version(ci, clone_version_pattern)
+    assert zenoh_pico_version == version(readme, ~r/clones `zenoh-pico`\s+version `([^`]+)`/)
     assert zenoh_pico_version == version(esp_idf_cmake, clone_version_pattern)
     assert zenoh_pico_version == version(esp_idf_readme, clone_version_pattern)
   end

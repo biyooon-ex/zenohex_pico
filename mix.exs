@@ -7,6 +7,8 @@ defmodule ZenohexPico.MixProject do
     [
       app: :zenohex_pico,
       version: "0.1.0",
+      description: "A thin Elixir wrapper around zenoh-pico, implemented using C.",
+      package: package(),
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod
     ] ++ project(Mix.target())
@@ -15,6 +17,25 @@ defmodule ZenohexPico.MixProject do
   def application do
     [
       extra_applications: [:logger]
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/biyooon-ex/zenohex_pico"},
+      files: [
+        ".formatter.exs",
+        "LICENSE",
+        "README.md",
+        "ZENOHEX_API_COMPATIBILITY.md",
+        "lib",
+        "mix",
+        "mix.exs",
+        "zxp_avm_esp32/**/*.{c,h,txt,sh,md}",
+        "zxp_unix/*.{c,h}",
+        "zxp_unix/Makefile"
+      ]
     ]
   end
 
