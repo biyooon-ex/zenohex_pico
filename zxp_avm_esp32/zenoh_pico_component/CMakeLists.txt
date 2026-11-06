@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(ZENOHPICO_SUBMODULE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../zenoh-pico")
+set(ZENOHPICO_DIR "${CMAKE_CURRENT_LIST_DIR}/../../zenoh-pico")
 
-if(NOT EXISTS "${ZENOHPICO_SUBMODULE_DIR}/CMakeLists.txt")
+if(NOT EXISTS "${ZENOHPICO_DIR}/CMakeLists.txt")
 	message(FATAL_ERROR
-		"zenoh-pico submodule is missing at ${ZENOHPICO_SUBMODULE_DIR}. Run at repo root: git submodule update --init --recursive")
+		"zenoh-pico is missing at ${ZENOHPICO_DIR}. Run at repo root: git clone --branch 1.10.2 https://github.com/eclipse-zenoh/zenoh-pico.git")
 endif()
 
 set(ZENOHPICO_IDF_REQUIRES
@@ -33,7 +33,7 @@ set(ZP_PLATFORM espidf CACHE STRING "Built-in or external platform profile" FORC
 
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(
-	"${ZENOHPICO_SUBMODULE_DIR}"
+	"${ZENOHPICO_DIR}"
 	"${CMAKE_CURRENT_BINARY_DIR}/zenoh-pico"
 )
 

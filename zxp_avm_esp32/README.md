@@ -2,7 +2,7 @@
 
 ## Build and flash AtomVM
 
-1. Prepare the zenoh-pico submodule.
+1. Prepare the zenoh-pico sources.
 
 ```
 cd /path/to/repos
@@ -11,7 +11,7 @@ cd zenohex_pico
 git checkout tag # FIXME
 export MIX_TARGET=avm_esp32
 mix deps.get
-mix compile # this step prepares zenoh-pico submodule
+mix compile # this step prepares zenoh-pico sources
 ```
 
 2. Clone AtomVM and build its Unix artifacts. The build produces `AtomVM/build/libs`, which is required in the next step.

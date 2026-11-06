@@ -3,7 +3,7 @@
 This repository is a wrapper that makes `zenoh-pico` usable from native ESP-IDF (`idf.py`).
 
 It provides only the minimum integration layer required to build `zenoh-pico` as an ESP-IDF component.
-The `zenoh-pico` source is kept as a git submodule at the Mix project root.
+The `zenoh-pico` source is cloned into the Mix project root.
 
 ## Scope
 
@@ -32,15 +32,15 @@ cd zenohex_pico
 ```
 
 This component is not a standalone repository: it requires the `zenoh-pico`
-submodule at `../../zenoh-pico`.
+directory at `../../zenoh-pico`.
 
-Then, from the repository root, initialize/update submodules:
+From the repository root, clone `zenoh-pico`:
 
 ```bash
-git submodule update --init --recursive
+git clone --branch 1.10.2 https://github.com/eclipse-zenoh/zenoh-pico.git
 ```
 
-Ensure the `zenoh-pico` submodule is present at the Mix project root (relative
+Ensure the `zenoh-pico` directory is present at the Mix project root (relative
 to this component: `../../zenoh-pico`).
 
 ### 2) Reference it with `EXTRA_COMPONENT_DIRS`

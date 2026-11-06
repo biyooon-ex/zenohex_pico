@@ -25,8 +25,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
+
+      - name: Clone zenoh-pico
+        run: git clone --branch 1.10.2 https://github.com/eclipse-zenoh/zenoh-pico.git
 
       - name: Compute CI YAML hash
         id: ci-yaml-hash

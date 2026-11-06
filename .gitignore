@@ -29,6 +29,9 @@ zenohex_pico-*.tar
 /avm_deps/
 /*.avm
 
+# Zenoh-Pico
+/zenoh-pico/
+
 # Visula Studio Code
 .vscode/
 
