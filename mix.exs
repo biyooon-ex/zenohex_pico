@@ -7,6 +7,8 @@ defmodule ZenohexPico.MixProject do
     [
       app: :zenohex_pico,
       version: "0.1.0",
+      description: "A thin Elixir wrapper around zenoh-pico, implemented using C.",
+      package: package(),
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod
     ] ++ project(Mix.target())
@@ -18,12 +20,38 @@ defmodule ZenohexPico.MixProject do
     ]
   end
 
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/biyooon-ex/zenohex_pico"},
+      files: [
+        ".formatter.exs",
+        "LICENSE",
+        "README.md",
+        "ZENOHEX_API_COMPATIBILITY.md",
+        "lib",
+        "mix",
+        "mix.exs",
+        "zxp_avm_esp32/**/*.{c,h,txt,sh,md}",
+        "zxp_unix/*.{c,h}",
+        "zxp_unix/Makefile"
+      ]
+    ]
+  end
+
   defp project(:avm_esp32) do
+    port = fn ->
+      case :os.type() do
+        {:unix, :linux} -> "/dev/ttyACM0"
+        {:unix, :darwin} -> "/dev/cu.usbmodem2101"
+      end
+    end
+
     [
       deps: [
-        {:exatomvm,
-         git: "https://github.com/atomvm/exatomvm.git",
-         ref: "ff7daf7e83a4e86fbf078730b6c49045a99de9f8"}
+        {:exatomvm, github: "atomvm/exatomvm", runtime: false, override: true},
+        {:atomvm, "~> 0.7.0-beta.0", optional: true, runtime: false},
+        {:pythonx, "~> 0.4.0"}
       ],
       compilers: [:zenoh_pico] ++ Mix.compilers(),
       atomvm: [
@@ -32,12 +60,12 @@ defmodule ZenohexPico.MixProject do
             :test -> ZenohexPico.AvmEsp32.Test
             _ -> ZenohexPico.AvmEsp32
           end,
-        flash_offset: 0x250000
+        flash_offset: 0x290000
       ],
       aliases: [
         flash: [
           "atomvm.packbeam",
-          "atomvm.esp32.flash --port /dev/ttyACM0 --baud 921600"
+          "atomvm.esp32.flash --port #{port.()} --baud 921600"
         ],
         format: [
           fn _ ->
