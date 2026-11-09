@@ -22,8 +22,6 @@ defmodule ZenohexPico.MixProject do
 
   defp package do
     [
-      licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/biyooon-ex/zenohex_pico"},
       files: [
         ".formatter.exs",
         "LICENSE",
@@ -35,7 +33,9 @@ defmodule ZenohexPico.MixProject do
         "zxp_avm_esp32/**/*.{c,h,txt,sh,md}",
         "zxp_unix/*.{c,h}",
         "zxp_unix/Makefile"
-      ]
+      ],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/biyooon-ex/zenohex_pico"}
     ]
   end
 
