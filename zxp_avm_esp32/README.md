@@ -56,15 +56,20 @@ idf.py menuconfig
 
 In `idf.py menuconfig`, enable `LWIP_IPV6` and set `ESP_MAIN_TASK_STACK_SIZE` to `8192`.
 
+Then let's build,
+
 ```
 idf.py -DEXTRA_COMPONENT_DIRS="/path/to/zenohex_pico/zxp_avm_esp32/zenoh_pico_component;/path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_component" build
-# If build failed with following messages, you need to follow https://github.com/biyooon-ex/zenohex_pico/issues/15.
-# > Error: app partition is too small for binary atomvm-esp32.bin size 0x1c0920:
-# >  - Part 'factory' 0/0 @ 0x10000 size 0x1c0000 (overflow 0x920)
+...
 idf.py -p /dev/ttyACM0 flash
 ```
 
 On macOS, use your board's serial device path (for example, `/dev/cu.usbmodem...` or `/dev/cu.usbserial...`) instead of `/dev/ttyACM0`.
+
+If build failed with following messages, you need to follow https://github.com/biyooon-ex/zenohex_pico/issues/15.
+
+> Error: app partition is too small for binary atomvm-esp32.bin size 0x1c0920:
+>  - Part 'factory' 0/0 @ 0x10000 size 0x1c0000 (overflow 0x920)
 
 ## Make release artifact zip
 
