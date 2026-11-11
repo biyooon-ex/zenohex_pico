@@ -1,6 +1,16 @@
 # ZenohexPico
 
+[![Hex version](https://img.shields.io/hexpm/v/zenohex_pico.svg "Hex version")](https://hex.pm/packages/zenohex_pico)
+[![API docs](https://img.shields.io/hexpm/v/zenohex_pico.svg?label=hexdocs "API docs")](https://hexdocs.pm/zenohex_pico/)
+[![License](https://img.shields.io/hexpm/l/zenohex_pico.svg)](https://github.com/biyooon-ex/zenohex_pico/blob/main/LICENSE)
+[![CI](https://github.com/biyooon-ex/zenohex_pico/actions/workflows/ci.yaml/badge.svg)](https://github.com/biyooon-ex/zenohex_pico/actions/workflows/ci.yaml)
+
 A thin Elixir wrapper around zenoh-pico, implemented using C.
+
+**Currently, ZenohexPico uses version 1.10.2 of Zenoh.**
+
+We recommend you use the same version to communicate with other Zenoh clients or routers since version compatibility is somewhat important for Zenoh.
+Please also check the description on [Releases](https://github.com/biyooon-ex/zenohex_pico/releases) about the corresponding Zenoh version.
 
 ## Installation
 
@@ -14,10 +24,6 @@ def deps do
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/zenohex_pico>.
 
 ## Publishing
 
