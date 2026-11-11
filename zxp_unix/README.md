@@ -1,43 +1,15 @@
-# ZenohexPico
+# ZenohexPico for UNIX
 
-[![Hex version](https://img.shields.io/hexpm/v/zenohex_pico.svg "Hex version")](https://hex.pm/packages/zenohex_pico)
-[![API docs](https://img.shields.io/hexpm/v/zenohex_pico.svg?label=hexdocs "API docs")](https://hexdocs.pm/zenohex_pico/)
-[![License](https://img.shields.io/hexpm/l/zenohex_pico.svg)](https://github.com/biyooon-ex/zenohex_pico/blob/main/LICENSE)
-[![CI](https://github.com/biyooon-ex/zenohex_pico/actions/workflows/ci.yaml/badge.svg)](https://github.com/biyooon-ex/zenohex_pico/actions/workflows/ci.yaml)
+ZenohexPico is primarily designed for use with AtomVM running on ESP32.
+
+So we highly recommend using [Zenohex](https://github.com/biyooon-ex/zenohex) for Unix use cases because it supports more of the Zenoh API than ZenohexPico.
+
+see. [Zenohex API compatibility](../ZENOHEX_API_COMPATIBILITY.md)
+
 
 ## Usage
 
-**Currently, ZenohexPico uses version 1.10.0 of Zenoh.**
-
-We recommend you use the same version to communicate with other Zenoh clients or routers since version compatibility is somewhat important for Zenoh.
-Please also check the description on [Releases](https://github.com/biyooon-ex/zenohex_pico/releases) about the corresponding Zenoh version.
-
-FYI, the development team currently uses the following versions.
-
-- Elixir 1.18.5-otp-27
-- Erlang/OTP 27.3.4.17
-
-### Installation
-
-`zenohex_pico` is [available in Hex](https://hex.pm/packages/zenohex_pico).
-
-You can install this package into your project by adding `zenohex_pico` to your list of dependencies in `mix.exs`:
-
-```elixir
-  defp deps do
-    [
-      ...
-      {:zenohex_pico, "~> 0.1.0"},
-      ...
-    ]
-  end
-```
-
-Documentation is also [available in HexDocs](https://hexdocs.pm/zenohex_pico).
-
-### Getting Started
-
-Zenohex has a policy of providing APIs that wrap the basic functionality of Zenoh like other API libraries.
+ZenohexPico has a policy of providing APIs that wrap the basic functionality of Zenoh like other API libraries.
 
 Here is the first step to building an Elixir application and using this library.
 
