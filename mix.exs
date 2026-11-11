@@ -24,6 +24,7 @@ defmodule ZenohexPico.MixProject do
     [
       files: [
         ".formatter.exs",
+        "FOR_DEVELOPERS.md",
         "LICENSE",
         "README.md",
         "ZENOHEX_API_COMPATIBILITY.md",
@@ -108,7 +109,12 @@ defmodule ZenohexPico.MixProject do
         plt_core_path: "priv/plts/core.plt"
       ],
       docs: [
-        extras: ["README.md", "LICENSE", "ZENOHEX_API_COMPATIBILITY.md"],
+        extras: [
+          "FOR_DEVELOPERS.md",
+          "LICENSE",
+          "README.md",
+          "ZENOHEX_API_COMPATIBILITY.md"
+        ],
         main: "readme"
       ],
       test_coverage: [
