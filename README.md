@@ -14,6 +14,12 @@ ZenohexPico is primarily designed for use with AtomVM running on ESP32.
 We recommend you use the same version to communicate with other Zenoh clients or
 routers since version compatibility is somewhat important for Zenoh.
 
+## 制限
+
+ZenohexPico がサポートする API は、[Zenohex](https://github.com/biyooon-ex/zenohex) よりも
+限られています。対応状況の比較については、
+[Zenohex API compatibility](./ZENOHEX_API_COMPATIBILITY.md) を参照してください。
+
 ## 使い方
 
 ZenohexPico を ESP32 上の AtomVM で使うには、次の 2 つの手順が必要です。
@@ -82,3 +88,7 @@ mix atomvm.esp32.flash --port /dev/your.usbserial
 [ExAtomVM](https://github.com/atomvm/exatomvm) を参照してください。
 
 以上で準備完了です。ZenohexPico をお楽しみください！
+
+ZenohexPico の利用例については、
+[ZenohexPico.AvmEsp32.Test](https://github.com/biyooon-ex/zenohex_pico/blob/main/lib/zenohex_pico/avm_esp32/test.ex)
+の `start/0` 関数と、そこから呼び出される関数を参照してください。
