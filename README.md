@@ -20,7 +20,14 @@ ZenohexPico がサポートする API は、[Zenohex](https://github.com/biyooon
 限られています。対応状況の比較については、
 [Zenohex API compatibility](./ZENOHEX_API_COMPATIBILITY.md) を参照してください。
 
+Unix で利用する場合は、より多くの Zenoh API に対応している
+[Zenohex](https://github.com/biyooon-ex/zenohex) を推奨します。
+ZenohexPico を Unix で利用する方法は、
+[Unix 向け README](https://github.com/biyooon-ex/zenohex_pico/blob/main/zxp_unix/README.md) を参照してください。
+
 ## 使い方
+
+<!-- TODO: 対応 OS、Elixir と Erlang/OTP のバージョン、必要なツールなどの前提環境を確認して記載する。依存パッケージのビルド要件も確認する。 -->
 
 ZenohexPico を ESP32 上の AtomVM で使うには、次の 2 つの手順が必要です。
 
@@ -35,6 +42,8 @@ ZenohexPico を ESP32 上の AtomVM で使うには、次の 2 つの手順が�
 zenoh-pico を組み込み済みの AtomVM を ZIP ファイルとして配布しています。
 プロジェクトで使用する ZenohexPico と同じバージョンのリリースから、
 ターゲット機に対応する ZIP ファイルをダウンロードしてください。
+現在公開されている ZIP ファイルは ESP32-S3 向けです。
+配布対象はリリースごとに異なる場合があるため、各リリースを確認してください。
 ZIP ファイルを解凍し、そのディレクトリ内の README に従って
 AtomVM をターゲット機に書き込んでください。
 
@@ -67,14 +76,15 @@ This requires Git and network access. The task asks for
 confirmation before cloning; for non-interactive builds, set
 `ZENOHEX_PICO_AUTO_GIT_CLONE=true`.
 
-Building from Hex also requires CMake, Make, a C compiler, and Erlang
-development headers. This wrapper is MIT-licensed. The upstream `zenoh-pico`
-source is licensed under Apache-2.0 OR EPL-2.0; see `zenoh-pico/LICENSE` and
+This wrapper is MIT-licensed. The upstream `zenoh-pico` source is licensed under
+Apache-2.0 OR EPL-2.0; see `zenoh-pico/LICENSE` and
 `zenoh-pico/NOTICE.md` after it has been cloned.
 
 次に、解凍したディレクトリ内の `avm_deps` をプロジェクトのルートにコピーしてください。
 この `avm_deps` は、ZIP ファイルに含まれる AtomVM と互換性があります。
 プロジェクトに既に `avm_deps` がある場合は、ZIP ファイル内のものに置き換えてください。
+既存の `avm_deps` にプロジェクト固有のファイルが含まれる場合は、
+置き換え前にバックアップし、必要なファイルの互換性を確認してください。
 
 その後、次のコマンドを順に実行して、アプリケーションをパックし、
 ターゲット機に書き込みます。
