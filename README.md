@@ -14,64 +14,60 @@ ZenohexPico is primarily designed for use with AtomVM running on ESP32.
 We recommend you use the same version to communicate with other Zenoh clients or
 routers since version compatibility is somewhat important for Zenoh.
 
-## 制限
+## Limitations
 
-ZenohexPico がサポートする API は、[Zenohex](https://github.com/biyooon-ex/zenohex) よりも
-限られています。対応状況の比較については、
-[Zenohex API compatibility](./ZENOHEX_API_COMPATIBILITY.md) を参照してください。
+ZenohexPico supports fewer APIs than [Zenohex](https://github.com/biyooon-ex/zenohex).
+For a comparison, see [Zenohex API compatibility](./ZENOHEX_API_COMPATIBILITY.md).
 
-Unix で利用する場合は、より多くの Zenoh API に対応している
-[Zenohex](https://github.com/biyooon-ex/zenohex) を推奨します。
-ZenohexPico を Unix で利用する方法は、
-[Unix 向け README](https://github.com/biyooon-ex/zenohex_pico/blob/main/zxp_unix/README.md) を参照してください。
+For Unix use cases, we recommend [Zenohex](https://github.com/biyooon-ex/zenohex),
+which supports more of the Zenoh API. To use ZenohexPico on Unix, see the
+[Unix README](https://github.com/biyooon-ex/zenohex_pico/blob/main/zxp_unix/README.md).
 
-## 使い方
+## Usage
 
-<!-- TODO: 対応 OS、Elixir と Erlang/OTP のバージョン、必要なツールなどの前提環境を確認して記載する。依存パッケージのビルド要件も確認する。 -->
+<!-- TODO: Confirm and document prerequisites, including supported operating systems, Elixir and Erlang/OTP versions, required tools, and dependency build requirements. -->
 
-ZenohexPico を ESP32 上の AtomVM で使うには、次の 2 つの手順が必要です。
+To use ZenohexPico with AtomVM on ESP32, follow these two steps:
 
-1. zenoh-pico を組み込んだ AtomVM をターゲット機に書き込む。
-2. Elixir AtomVM プロジェクトに ZenohexPico を追加し、アプリケーションをターゲット機に書き込む。
+1. Flash AtomVM with zenoh-pico built in to the target device.
+2. Add ZenohexPico to your Elixir AtomVM project and flash the application to the target device.
 
-以下で順に説明します。
+These steps are described below.
 
-### zenoh-pico を組み込んだ AtomVM をターゲット機に書き込む
+### Flash AtomVM with zenoh-pico built in
 
-[GitHub Releases](https://github.com/biyooon-ex/zenohex_pico/releases) で、
-zenoh-pico を組み込み済みの AtomVM を ZIP ファイルとして配布しています。
-プロジェクトで使用する ZenohexPico と同じバージョンのリリースから、
-ターゲット機に対応する ZIP ファイルをダウンロードしてください。
-現在公開されている ZIP ファイルは ESP32-S3 向けです。
-配布対象はリリースごとに異なる場合があるため、各リリースを確認してください。
-ZIP ファイルを解凍し、そのディレクトリ内の README に従って
-AtomVM をターゲット機に書き込んでください。
+[GitHub Releases](https://github.com/biyooon-ex/zenohex_pico/releases) provides
+ZIP files containing AtomVM with zenoh-pico built in. Download the ZIP file for
+your target device from the release matching the ZenohexPico version used in your project.
+The currently published ZIP file is for ESP32-S3. Available targets may vary by
+release, so check the release for your version.
+Extract the ZIP file and follow the README in the extracted directory to flash
+AtomVM to your target device.
 
-ESP32-S3 以外のESP32で試したい場合は、
-[FOR_DEVELOPERS.md](./FOR_DEVELOPERS.md) の AtomVM のビルド手順を参考にしてください。
+To try an ESP32 target other than ESP32-S3, refer to the AtomVM build
+instructions in [FOR_DEVELOPERS.md](./FOR_DEVELOPERS.md).
 
-### Elixir AtomVM プロジェクトに ZenohexPico を追加する
+### Add ZenohexPico to your Elixir AtomVM project
 
-[ExAtomVM](https://github.com/atomvm/exatomvm) を利用している
-Elixir AtomVM プロジェクトの `mix.exs` の依存関係に、以下を追加してください。
+Add the following dependency to `mix.exs` in your Elixir AtomVM project using
+[ExAtomVM](https://github.com/atomvm/exatomvm):
 
 ```elixir
 {:zenohex_pico, "~> 0.1.0"},
 ```
 
-プロジェクトのルートで、環境変数 `MIX_TARGET` を `avm_esp32` に設定してから、
-依存関係を取得してください。
+From the project root, set `MIX_TARGET` to `avm_esp32` and fetch the dependencies:
 
 ```sh
 export MIX_TARGET=avm_esp32
 mix deps.get
 ```
 
-以降の Mix コマンドも同じ設定で実行してください。別のシェルを使う場合は、
-そのシェルでも `MIX_TARGET` を設定してください。
+Run subsequent Mix commands with the same setting. If you use another shell,
+set `MIX_TARGET` there as well.
 
-`mix.lock` で取得された ZenohexPico のバージョンを確認し、
-先ほど使用した ZIP ファイルのリリースバージョンと一致していることを確認してください。
+Check the ZenohexPico version in `mix.lock` and make sure it matches the release
+version of the ZIP file you used.
 
 The Hex package does not include the upstream `zenoh-pico` source or compiled
 binaries. When Mix compiles the package, its compiler task clones `zenoh-pico`.
@@ -83,25 +79,24 @@ This wrapper is MIT-licensed. The upstream `zenoh-pico` source is licensed under
 Apache-2.0 OR EPL-2.0; see `zenoh-pico/LICENSE` and
 `zenoh-pico/NOTICE.md` after it has been cloned.
 
-次に、解凍したディレクトリ内の `avm_deps` をプロジェクトのルートにコピーしてください。
-この `avm_deps` は、ZIP ファイルに含まれる AtomVM と互換性があります。
-プロジェクトに既に `avm_deps` がある場合は、ZIP ファイル内のものに置き換えてください。
-既存の `avm_deps` にプロジェクト固有のファイルが含まれる場合は、
-置き換え前にバックアップし、必要なファイルの互換性を確認してください。
+Next, copy `avm_deps` from the extracted directory to the project root. This
+`avm_deps` is compatible with the AtomVM included in the ZIP file.
+If your project already has an `avm_deps` directory, replace it with the one
+from the ZIP file. If it contains project-specific files, back them up before
+replacing it and check the compatibility of any files you need.
 
-その後、次のコマンドを順に実行して、アプリケーションをパックし、
-ターゲット機に書き込みます。
+Then run the following commands in order to pack the application and flash it
+to the target device:
 
 ```sh
 mix atomvm.packbeam
 mix atomvm.esp32.flash --port /dev/your.usbserial
 ```
 
-これらの Mix タスクの詳細については、
-[ExAtomVM](https://github.com/atomvm/exatomvm) を参照してください。
+For details on these Mix tasks, see [ExAtomVM](https://github.com/atomvm/exatomvm).
 
-以上で準備完了です。ZenohexPico をお楽しみください！
+You are now ready to use ZenohexPico. Enjoy!
 
-ZenohexPico の利用例については、
-[ZenohexPico.AvmEsp32.Test](https://github.com/biyooon-ex/zenohex_pico/blob/main/lib/zenohex_pico/avm_esp32/test.ex)
-の `start/0` 関数と、そこから呼び出される関数を参照してください。
+For examples of using ZenohexPico, see the `start/0` function and the functions
+it calls in
+[ZenohexPico.AvmEsp32.Test](https://github.com/biyooon-ex/zenohex_pico/blob/main/lib/zenohex_pico/avm_esp32/test.ex).
