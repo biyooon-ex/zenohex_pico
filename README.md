@@ -70,14 +70,13 @@ Check the ZenohexPico version in `mix.lock` and make sure it matches the release
 version of the ZIP file you used.
 
 The Hex package does not include the upstream `zenoh-pico` source or compiled
-binaries. When Mix compiles the package, its compiler task clones `zenoh-pico`.
-This requires Git and network access. The task asks for
-confirmation before cloning; for non-interactive builds, set
-`ZENOHEX_PICO_AUTO_GIT_CLONE=true`.
+binaries. When building an application for `avm_esp32`, Mix does not clone
+`zenoh-pico`; the prebuilt AtomVM includes it.
 
 This wrapper is MIT-licensed. The upstream `zenoh-pico` source is licensed under
-Apache-2.0 OR EPL-2.0; see `zenoh-pico/LICENSE` and
-`zenoh-pico/NOTICE.md` after it has been cloned.
+Apache-2.0 OR EPL-2.0; see its
+[LICENSE](https://github.com/eclipse-zenoh/zenoh-pico/blob/main/LICENSE) and
+[NOTICE](https://github.com/eclipse-zenoh/zenoh-pico/blob/main/NOTICE.md).
 
 Next, copy `avm_deps` from the extracted directory to the project root. This
 `avm_deps` is compatible with the AtomVM included in the ZIP file.

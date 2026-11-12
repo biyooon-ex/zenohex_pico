@@ -68,7 +68,7 @@ defmodule ZenohexPico.MixProject do
           {:atomvm, "~> 0.7.0-beta.0", optional: true, runtime: false},
           {:pythonx, "~> 0.4.0"}
         ] ++ common_deps(),
-      compilers: [:zenoh_pico] ++ Mix.compilers(),
+      compilers: Mix.compilers(),
       atomvm: [
         start:
           case Mix.env() do

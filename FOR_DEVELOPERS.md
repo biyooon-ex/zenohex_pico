@@ -15,7 +15,8 @@ cd zenohex_pico
 git checkout tag # FIXME
 export MIX_TARGET=avm_esp32
 mix deps.get
-mix compile # this step prepares zenoh-pico sources
+mix compile.zenoh_pico # this step prepares zenoh-pico sources
+mix compile
 ```
 
 2. Clone AtomVM and build its Unix artifacts. The build produces `AtomVM/build/libs`, which is required in the next step.
