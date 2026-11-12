@@ -18,7 +18,7 @@ defmodule ZenohexPico.VersionMatchTest do
              version(ci, ~r/^\s*-?\s*otp_version:\s*([\d.]+)$/m)
   end
 
-  test "zenoh-pico clone instructions use the Mix task's version" do
+  test "zenoh-pico versions in documentation and clone instructions match the Mix task" do
     zenoh_pico_version = Mix.Tasks.Compile.ZenohPico.zenoh_pico_version()
     ci = File.read!(@ci_path)
     readme = File.read!(@readme_path)
@@ -27,7 +27,7 @@ defmodule ZenohexPico.VersionMatchTest do
     clone_version_pattern = ~r/git clone --branch\s+([^\s]+)/
 
     assert zenoh_pico_version == version(ci, clone_version_pattern)
-    assert zenoh_pico_version == version(readme, ~r/clones `zenoh-pico`\s+version `([^`]+)`/)
+    assert zenoh_pico_version == version(readme, ~r/uses version ([^\s]+) of Zenoh/)
     assert zenoh_pico_version == version(esp_idf_cmake, clone_version_pattern)
     assert zenoh_pico_version == version(esp_idf_readme, clone_version_pattern)
   end
