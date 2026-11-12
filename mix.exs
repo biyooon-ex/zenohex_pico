@@ -10,7 +10,8 @@ defmodule ZenohexPico.MixProject do
       description: "A thin Elixir wrapper around zenoh-pico, implemented using C.",
       package: package(),
       elixir: "~> 1.18",
-      start_permanent: Mix.env() == :prod
+      start_permanent: Mix.env() == :prod,
+      docs: docs()
     ] ++ project(Mix.target())
   end
 
@@ -40,6 +41,18 @@ defmodule ZenohexPico.MixProject do
     ]
   end
 
+  defp docs do
+    [
+      extras: [
+        "FOR_DEVELOPERS.md",
+        "LICENSE",
+        "README.md",
+        "ZENOHEX_API_COMPATIBILITY.md"
+      ],
+      main: "readme"
+    ]
+  end
+
   defp project(:avm_esp32) do
     port = fn ->
       case :os.type() do
@@ -49,11 +62,12 @@ defmodule ZenohexPico.MixProject do
     end
 
     [
-      deps: [
-        {:exatomvm, github: "atomvm/exatomvm", runtime: false, override: true},
-        {:atomvm, "~> 0.7.0-beta.0", optional: true, runtime: false},
-        {:pythonx, "~> 0.4.0"}
-      ],
+      deps:
+        [
+          {:exatomvm, github: "atomvm/exatomvm", runtime: false, override: true},
+          {:atomvm, "~> 0.7.0-beta.0", optional: true, runtime: false},
+          {:pythonx, "~> 0.4.0"}
+        ] ++ common_deps(),
       compilers: [:zenoh_pico] ++ Mix.compilers(),
       atomvm: [
         start:
@@ -83,13 +97,13 @@ defmodule ZenohexPico.MixProject do
 
   defp project(_) do
     [
-      deps: [
-        {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
-        {:elixir_make, "~> 0.4", runtime: false},
-        {:mix_test_watch, "~> 1.2", only: [:dev, :test], runtime: false},
-        {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-        {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
-      ],
+      deps:
+        [
+          {:elixir_make, "~> 0.4", runtime: false},
+          {:mix_test_watch, "~> 1.2", only: [:dev, :test], runtime: false},
+          {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+          {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+        ] ++ common_deps(),
       compilers: [:zenoh_pico, :elixir_make] ++ Mix.compilers(),
       make_cwd: "zxp_unix",
       make_clean: ["clean"],
@@ -108,21 +122,18 @@ defmodule ZenohexPico.MixProject do
         plt_file: {:no_warn, "priv/plts/project.plt"},
         plt_core_path: "priv/plts/core.plt"
       ],
-      docs: [
-        extras: [
-          "FOR_DEVELOPERS.md",
-          "LICENSE",
-          "README.md",
-          "ZENOHEX_API_COMPATIBILITY.md"
-        ],
-        main: "readme"
-      ],
       test_coverage: [
         ignore_modules: [
           ZenohexPico.Nif,
           ZenohexPico.AvmEsp32.Test
         ]
       ]
+    ]
+  end
+
+  defp common_deps do
+    [
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true}
     ]
   end
 end
