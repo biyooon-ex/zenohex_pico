@@ -29,8 +29,8 @@ cd AtomVM/
 git checkout 3a9ea46b8cf28066caf126c46119dc58f950de5f
 mkdir build
 cd build
-mise use erlang@27.3.4.17
-mise use elixir@1.18.5-otp-27
+mise use erlang@29.1.2
+mise use elixir@1.20.5-otp-29
 ```
 
 Confirm that `MIX_HOME` has changed.
@@ -44,7 +44,7 @@ Then build. The `export` command adds `rebar3` to `PATH`.
 ```
 mix local.hex --force
 mix local.rebar --force
-export PATH="$MIX_HOME/elixir/1-18-otp-27:$PATH"
+export PATH="$MIX_HOME/elixir/1-20-otp-29:$PATH"
 cmake ..
 make -j
 cd ..
