@@ -1,6 +1,10 @@
-# Development with M5STACK CORE S3
+# For developers
 
-## Build and flash AtomVM
+## ESP32 development
+
+The following instructions have been tested using an M5Stack Core S3.
+
+### Build and flash AtomVM
 
 1. Prepare the zenoh-pico sources.
 
@@ -54,6 +58,9 @@ idf.py set-target esp32s3
 idf.py menuconfig
 ```
 
+Other ESP32 targets may also work by changing `set-target`, but we have not tested them.
+If you try another target, please share your results in an issue.
+
 In `idf.py menuconfig`, enable `LWIP_IPV6` and set `ESP_MAIN_TASK_STACK_SIZE` to `8192`.
 
 Then let's build,
@@ -71,20 +78,7 @@ If build failed with following messages, you need to follow https://github.com/b
 > Error: app partition is too small for binary atomvm-esp32.bin size 0x1c0920:
 >  - Part 'factory' 0/0 @ 0x10000 size 0x1c0000 (overflow 0x920)
 
-## Make release artifact zip
-
-1. Create artifact zip.
-
-```
-cd /path/to/AtomVM/src/platforms/esp32/build
-cp /path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_atomvm_artifact.sh .
-# this script creates zip file under the same directory
-./zenohex_pico_atomvm_artifact.sh
-```
-
-2. Upload the zip to Github release
-
-## Flash ZenohexPico Application
+### Flash ZenohexPico Application
 
 1. Prepare `avm_deps` and flash ZenohexPico application.
 
@@ -103,7 +97,7 @@ source "$HOME/.espressif/tools/activate_idf_v5.5.5.sh"
 mix flash
 ```
 
-## How to test
+### Test
 
 Verify that the ESP32 publishes ten samples to a subscriber running on a Unix host.
 
@@ -114,10 +108,15 @@ Verify that the ESP32 publishes ten samples to a subscriber running on a Unix ho
 :esp.nvs_put_binary(:atomvm, :sta_psk, "Password")
 ```
 
-2. From the repository root, start the subscriber in one terminal. This call waits until it receives ten samples.
+2. From the repository root, start IEx with the host target in one terminal:
+
+```sh
+MIX_TARGET=host iex -S mix
+```
+
+In IEx, start the subscriber. This call waits until it receives ten samples.
 
 ```elixir
-iex -S mix
 iex> ZenohexPico.AvmEsp32.Test.start_subscriber_on_unix()
 ```
 
@@ -135,3 +134,24 @@ MIX_ENV=test mix flash
 %ZenohexPico.Sample{attachment: "", congestion_control: :drop, encoding: "zenoh/bytes", express: false, key_expr: "key/expr", kind: :put, payload: "from M5STACK CORE S3, 0", priority: :data, timestamp: nil}
 %ZenohexPico.Sample{attachment: "", congestion_control: :drop, encoding: "zenoh/bytes", express: false, key_expr: "key/expr", kind: :put, payload: "from M5STACK CORE S3, 9", priority: :data, timestamp: nil}
 ```
+
+## Release
+
+### Publish to Hex
+
+```sh
+mix hex.publish
+```
+
+### Make release artifact zip
+
+1. Create artifact zip.
+
+```
+cd /path/to/AtomVM/src/platforms/esp32/build
+cp /path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_atomvm_artifact.sh .
+# this script creates zip file under the same directory
+./zenohex_pico_atomvm_artifact.sh
+```
+
+2. Upload the zip to Github release
