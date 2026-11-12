@@ -6,7 +6,7 @@ defmodule ZenohexPico.MixProject do
   def project do
     [
       app: :zenohex_pico,
-      version: "0.1.0-alpha.1",
+      version: "0.1.0-alpha.2",
       description: "A thin Elixir wrapper around zenoh-pico, implemented using C.",
       package: package(),
       elixir: "~> 1.18",
