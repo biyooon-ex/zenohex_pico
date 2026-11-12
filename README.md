@@ -47,6 +47,9 @@ zenoh-pico を組み込み済みの AtomVM を ZIP ファイルとして配布�
 ZIP ファイルを解凍し、そのディレクトリ内の README に従って
 AtomVM をターゲット機に書き込んでください。
 
+ESP32-S3 以外のESP32で試したい場合は、
+[FOR_DEVELOPERS.md](./FOR_DEVELOPERS.md) の AtomVM のビルド手順を参考にしてください。
+
 ### Elixir AtomVM プロジェクトに ZenohexPico を追加する
 
 [ExAtomVM](https://github.com/atomvm/exatomvm) を利用している
