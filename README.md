@@ -25,8 +25,6 @@ which supports more of the Zenoh API. To use ZenohexPico on Unix, see the
 
 ## Usage
 
-<!-- TODO: Confirm and document prerequisites, including supported operating systems, Elixir and Erlang/OTP versions, required tools, and dependency build requirements. -->
-
 To use ZenohexPico with AtomVM on ESP32, follow these two steps:
 
 1. Flash AtomVM with zenoh-pico built in to the target device.
