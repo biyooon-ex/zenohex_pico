@@ -155,4 +155,4 @@ cp /path/to/zenohex_pico/zxp_avm_esp32/zenohex_pico_atomvm_artifact.sh .
 ./zenohex_pico_atomvm_artifact.sh
 ```
 
-2. Upload the zip to Github release
+2. Upload the ZIP file to the [GitHub release](https://github.com/biyooon-ex/zenohex_pico/releases) corresponding to the ZenohexPico version.
