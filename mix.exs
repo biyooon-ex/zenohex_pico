@@ -74,8 +74,7 @@ defmodule ZenohexPico.MixProject do
           case Mix.env() do
             :test -> ZenohexPico.AvmEsp32.Test
             _ -> ZenohexPico.AvmEsp32
-          end,
-        flash_offset: 0x290000
+          end
       ],
       aliases: [
         flash: [
