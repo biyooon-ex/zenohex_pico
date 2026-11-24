@@ -1,4 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#endif
 
 #include <erl_nif.h>
 #include <errno.h>
@@ -436,6 +439,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     return zxp_raise(env, __FILE__, __LINE__, "pthread_condattr_init/1 failed");
   }
 
+#ifndef __APPLE__
   if (pthread_condattr_setclock(&attr, CLOCK_MONOTONIC) != 0)
   {
     pthread_condattr_destroy(&attr);
@@ -445,6 +449,7 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     zxp_session_get_options_drop(get_options);
     return zxp_raise(env, __FILE__, __LINE__, "pthread_condattr_setclock/2 failed");
   }
+#endif
 
   if (pthread_cond_init(&context->complete, &attr) != 0)
   {
@@ -529,7 +534,33 @@ ERL_NIF_TERM zxp_session_get(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
   {
     while (!context->is_z_get_complete)
     {
-      int wait_result = pthread_cond_timedwait(&context->complete, &context->mutex, &deadline);
+      int wait_result;
+#ifdef __APPLE__
+      struct timespec now;
+      if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+      {
+        wait_result = errno;
+      }
+      else
+      {
+        struct timespec remaining = {0, 0};
+        if (now.tv_sec < deadline.tv_sec ||
+            (now.tv_sec == deadline.tv_sec && now.tv_nsec < deadline.tv_nsec))
+        {
+          remaining.tv_sec = deadline.tv_sec - now.tv_sec;
+          remaining.tv_nsec = deadline.tv_nsec - now.tv_nsec;
+          if (remaining.tv_nsec < 0)
+          {
+            remaining.tv_sec--;
+            remaining.tv_nsec += 1000000000L;
+          }
+        }
+        wait_result =
+            pthread_cond_timedwait_relative_np(&context->complete, &context->mutex, &remaining);
+      }
+#else
+      wait_result = pthread_cond_timedwait(&context->complete, &context->mutex, &deadline);
+#endif
       if (wait_result == ETIMEDOUT)
       {
         break;

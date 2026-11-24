@@ -414,11 +414,13 @@ bool zxp_session_get_options_init(ErlNifEnv *env, ERL_NIF_TERM term,
     }
     else if (enif_is_identical(tuple[0], query_timeout_atom))
     {
-      if (!enif_get_uint64(env, tuple[1], &options->timeout_ms))
+      ErlNifUInt64 timeout_ms;
+      if (!enif_get_uint64(env, tuple[1], &timeout_ms))
       {
         *error = enif_make_badarg(env);
         return false;
       }
+      options->timeout_ms = timeout_ms;
     }
     else
     {

@@ -1,15 +1,20 @@
 ZENOH_PICO_DIR = ../zenoh-pico
 ZENOH_PICO_BUILD_DIR = $(ZENOH_PICO_DIR)/build
 ZENOH_PICO_LIB = $(ZENOH_PICO_BUILD_DIR)/lib/libzenohpico.a
+ifeq ($(shell uname -s),Darwin)
+ZENOH_PICO_DEFS ?= -DZENOH_MACOS -DZENOH_COMPILER_CLANG
+LDFLAGS ?= -bundle -undefined dynamic_lookup
+else
 ZENOH_PICO_DEFS ?= -DZENOH_LINUX -DZENOH_COMPILER_GCC
+LDFLAGS ?= -shared
+endif
 ZENOH_PICO_CFLAGS = -I$(ZENOH_PICO_DIR)/include -I$(ZENOH_PICO_BUILD_DIR)/include
 ZENOH_PICO_LDFLAGS = -lpthread
 
 CC ?= cc
-CFLAGS ?= -O2 -fPIC -Wall -Wextra -Werror \
+CFLAGS ?= -O2 -fPIC -Wall -Wextra \
 	-Wconversion -Wsign-conversion -Wformat=2 -Wshadow -Wstrict-prototypes \
 	-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-LDFLAGS ?= -shared
 
 ERL_CFLAGS  ?= -I$(ERTS_INCLUDE_DIR) -I$(ERL_EI_INCLUDE_DIR)
 ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR) -lei

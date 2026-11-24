@@ -12,12 +12,19 @@ see. [Zenohex API compatibility](../ZENOHEX_API_COMPATIBILITY.md)
 ZenohexPico has a policy of providing APIs that wrap the basic functionality of Zenoh like other API libraries.
 
 Here is the first step to building an Elixir application and using this library.
+On Linux or macOS, install CMake, Make, and a C compiler (on macOS, install
+the Xcode Command Line Tools). The Elixir and Erlang versions used by this
+project are listed in [mise.toml](../mise.toml).
 
 ```sh
 $ mix deps.get
 $ mix compile
+$ mix test
 $ iex -S mix
 ```
+
+The first host build also needs the zenoh-pico sources. Mix prompts to clone
+the required version if they are missing.
 
 ```elixir
 iex()> {:ok, config} = ZenohexPico.Config.default()
