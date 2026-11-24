@@ -12,7 +12,7 @@ The following instructions have been tested using an M5Stack Core S3.
 cd /path/to/repos
 git clone https://github.com/biyooon-ex/zenohex_pico.git
 cd zenohex_pico
-git checkout tag # FIXME
+git checkout v0.1.0-alpha.4
 export MIX_TARGET=avm_esp32
 mix deps.get
 mix compile.zenoh_pico # this step prepares zenoh-pico sources
@@ -25,8 +25,7 @@ mix compile
 cd /path/to/repos
 git clone https://github.com/atomvm/AtomVM.git
 cd AtomVM/
-# main branch head commit as of 2026-10-27
-git checkout 3a9ea46b8cf28066caf126c46119dc58f950de5f
+git checkout v0.7.0-beta.0
 mkdir build
 cd build
 mise use erlang@29.1.2
