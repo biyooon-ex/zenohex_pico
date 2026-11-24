@@ -19,6 +19,7 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
+          - macos-15
         beam:
           - otp_version: 29.1.2
             elixir_version: 1.20.5
