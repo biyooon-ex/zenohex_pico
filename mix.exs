@@ -64,7 +64,8 @@ defmodule ZenohexPico.MixProject do
     [
       deps:
         [
-          {:exatomvm, github: "atomvm/exatomvm", only: :dev, runtime: false, override: true},
+          {:exatomvm,
+           github: "atomvm/exatomvm", only: [:dev, :test], runtime: false, override: true},
           {:atomvm, "~> 0.7.0-beta.0", optional: true, runtime: false},
           {:pythonx, "~> 0.4.0"}
         ] ++ common_deps(),
