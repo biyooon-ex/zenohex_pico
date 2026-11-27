@@ -39,10 +39,16 @@ defmodule ZenohexPico.Config do
   an API for retrieving all configured :connect locators; get/2 returns only one locator.
 
   The `:scouting_what` bitmask uses `1` for routers, `2` for peers, and
-  `4` for clients. Combine values to discover multiple entity types; for
-  example, `"7"` discovers routers, peers, and clients.
+  `4` for clients. Combine values to search for multiple entity types; for
+  example, `"7"` searches for routers, peers, and clients.
 
-  `:scouting_timeout` applies only in client mode while scouting for a router.
+  Zenoh-Pico sends scouting requests but does not respond to them. Therefore,
+  Zenoh-Pico nodes cannot discover one another through multicast scouting.
+  To connect, use a discoverable Zenoh router or peer, or configure compatible
+  connection endpoints explicitly.
+
+  `:scouting_timeout` applies when scouting for a connection without a
+  configured connect or listen locator.
   `:session_zid` is optional; when it is unset, Zenoh Pico generates the
   session ID.
 
