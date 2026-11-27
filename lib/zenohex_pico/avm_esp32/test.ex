@@ -57,7 +57,7 @@ defmodule ZenohexPico.AvmEsp32.Test do
         ZenohexPico.Config.insert(config, :connect, "tcp/#{@host_ipv4_address}:7447")
 
       for i <- 0..9 do
-        :ok = ZenohexPico.put(config, "key/expr", "from M5STACK CORE S3, #{i}")
+        :ok = ZenohexPico.put("key/expr", "from M5STACK CORE S3, #{i}", config: config)
       end
     end
   else

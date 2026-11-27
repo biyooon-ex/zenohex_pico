@@ -10,9 +10,10 @@ defmodule ZenohexPicoTest do
     assert {:ok, listen_session} = Session.open(listen_config)
     on_exit(fn -> Session.close(listen_session) end)
 
-    assert :ok = ZenohexPico.put(connect_config, "zenohex_pico/public_api", "payload")
+    assert :ok = ZenohexPico.put("zenohex_pico/public_api", "payload", config: connect_config)
 
-    assert {:error, :timeout} = ZenohexPico.get(connect_config, "zenohex_pico/no_responder", 100)
+    assert {:error, :timeout} =
+             ZenohexPico.get("zenohex_pico/no_responder", 100, config: connect_config)
   end
 
   defp peer_config(endpoint_key, endpoint) do
