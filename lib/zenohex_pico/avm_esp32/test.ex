@@ -4,10 +4,15 @@ defmodule ZenohexPico.AvmEsp32.Test do
   if Mix.target() == :avm_esp32 and Mix.env() == :test do
     @compile {:no_warn_undefined, [:esp]}
     @host_ipv4_address (
-                         ipv4_address = ~S/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/
-                         {route, 0} = System.cmd("ip", ["-4", "route", "get", "1.1.1.1"])
-                         [_, host] = Regex.run(~r/\bsrc\s+(#{ipv4_address})\b/, route)
-                         host
+                         {:ok, socket} = :gen_udp.open(0, [:binary, active: false])
+
+                         try do
+                           :ok = :gen_udp.connect(socket, {1, 1, 1, 1}, 53)
+                           {:ok, {address, _port}} = :inet.sockname(socket)
+                           address |> :inet.ntoa() |> to_string()
+                         after
+                           :gen_udp.close(socket)
+                         end
                        )
 
     def start do
