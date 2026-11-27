@@ -14,6 +14,14 @@ defmodule ZenohexPicoTest do
              ZenohexPico.get("zenohex_pico/no_responder", 100, config: connect_config)
   end
 
+  test "top-level put and get return a scouting error with default configuration" do
+    assert {:error, "_z_err_scout_no_results" <> _} =
+             ZenohexPico.put("zenohex_pico/public_api", "payload")
+
+    assert {:error, "_z_err_scout_no_results" <> _} =
+             ZenohexPico.get("zenohex_pico/no_responder", 100)
+  end
+
   defp peer_config(endpoint_key, endpoint) do
     {:ok, config} = ZenohexPico.Config.default()
     {:ok, config} = ZenohexPico.Config.insert(config, :mode, "peer")
