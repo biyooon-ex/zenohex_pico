@@ -16,15 +16,29 @@ defmodule ZenohexPico do
 
   ## Parameters
 
-  - `config` : The configuration used to open the session.
   - `key_expr` : The key expression to publish to.
   - `payload` : The binary payload to publish.
-  - `opts` : Additional options. See `ZenohexPico.Session.put/4` for details.
+  - `opts` : Additional options. Use `:config` to specify the configuration;
+    otherwise, the default configuration is used. See `t:ZenohexPico.Session.put_opts/0`
+    for the remaining options.
   """
-  @spec put(ZenohexPico.Config.t(), String.t(), binary(), ZenohexPico.Session.put_opts()) ::
+  @spec put(
+          String.t(),
+          binary(),
+          [{:config, ZenohexPico.Config.t()} | ZenohexPico.Session.put_opt()]
+        ) ::
           :ok | {:error, reason :: term()}
-  def put(config, key_expr, payload, opts \\ []) do
-    with {:ok, session} <- ZenohexPico.Session.open(config) do
+  def put(key_expr, payload, opts \\ []) do
+    config_result =
+      case Keyword.fetch(opts, :config) do
+        {:ok, config} -> {:ok, config}
+        :error -> ZenohexPico.Config.default()
+      end
+
+    opts = Keyword.delete(opts, :config)
+
+    with {:ok, config} <- config_result,
+         {:ok, session} <- ZenohexPico.Session.open(config) do
       try do
         ZenohexPico.Session.put(session, key_expr, payload, opts)
       after
@@ -40,22 +54,31 @@ defmodule ZenohexPico do
 
   ## Parameters
 
-  - `config` : The configuration used to open the session.
   - `selector` : The selector to query.
   - `timeout` : Timeout in milliseconds to wait for query replies.
-  - `opts` : Additional options. See `ZenohexPico.Session.get/4` for details.
+  - `opts` : Additional options. Use `:config` to specify the configuration;
+    otherwise, the default configuration is used. See `t:ZenohexPico.Session.get_opts/0`
+    for the remaining options.
   """
   @spec get(
-          ZenohexPico.Config.t(),
           String.t(),
           pos_integer(),
-          ZenohexPico.Session.get_opts()
+          [{:config, ZenohexPico.Config.t()} | ZenohexPico.Session.get_opt()]
         ) ::
           {:ok, [ZenohexPico.Sample.t() | ZenohexPico.Query.ReplyError.t()]}
           | {:error, :timeout}
           | {:error, reason :: term()}
-  def get(config, selector, timeout, opts \\ []) do
-    with {:ok, session} <- ZenohexPico.Session.open(config) do
+  def get(selector, timeout, opts \\ []) do
+    config_result =
+      case Keyword.fetch(opts, :config) do
+        {:ok, config} -> {:ok, config}
+        :error -> ZenohexPico.Config.default()
+      end
+
+    opts = Keyword.delete(opts, :config)
+
+    with {:ok, config} <- config_result,
+         {:ok, session} <- ZenohexPico.Session.open(config) do
       try do
         ZenohexPico.Session.get(session, selector, timeout, opts)
       after

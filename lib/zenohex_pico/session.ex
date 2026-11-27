@@ -63,29 +63,31 @@ defmodule ZenohexPico.Session do
   @typedoc """
   Options accepted by `put/4`.
   """
-  @type put_opts :: [
-          encoding: String.t(),
-          attachment: binary(),
-          congestion_control: congestion_control(),
-          priority: priority(),
-          express: boolean(),
-          timestamp: zenoh_timestamp_string()
-        ]
+  @type put_opts :: [put_opt()]
+
+  @type put_opt ::
+          {:encoding, String.t()}
+          | {:attachment, binary()}
+          | {:congestion_control, congestion_control()}
+          | {:priority, priority()}
+          | {:express, boolean()}
+          | {:timestamp, zenoh_timestamp_string()}
 
   @typedoc """
   Options accepted by `get/4`.
   """
-  @type get_opts :: [
-          accept_replies: reply_key_expr(),
-          attachment: binary(),
-          congestion_control: congestion_control(),
-          consolidation: query_consolidation(),
-          encoding: String.t(),
-          express: boolean(),
-          payload: binary(),
-          priority: priority(),
-          target: query_target()
-        ]
+  @type get_opts :: [get_opt()]
+
+  @type get_opt ::
+          {:accept_replies, reply_key_expr()}
+          | {:attachment, binary()}
+          | {:congestion_control, congestion_control()}
+          | {:consolidation, query_consolidation()}
+          | {:encoding, String.t()}
+          | {:express, boolean()}
+          | {:payload, binary()}
+          | {:priority, priority()}
+          | {:target, query_target()}
 
   @typedoc """
   Options accepted by `declare_subscriber/4`.

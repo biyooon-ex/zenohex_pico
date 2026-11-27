@@ -23,6 +23,12 @@ For Unix use cases, we recommend [Zenohex](https://github.com/biyooon-ex/zenohex
 which supports more of the Zenoh API. To use ZenohexPico on Unix, see the
 [Unix README](https://github.com/biyooon-ex/zenohex_pico/blob/main/zxp_unix/README.md).
 
+### Zenoh-Pico limitations
+
+Zenoh-Pico nodes cannot discover one another through multicast scouting.
+For details and connection alternatives, see
+[ZenohexPico.Config](https://hexdocs.pm/zenohex_pico/ZenohexPico.Config.html).
+
 ## Usage
 
 To use ZenohexPico with AtomVM on ESP32, follow these two steps:
