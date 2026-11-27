@@ -57,7 +57,7 @@ defmodule ZenohexPico.MixProject do
     port = fn ->
       case :os.type() do
         {:unix, :linux} -> "/dev/ttyACM0"
-        {:unix, :darwin} -> "/dev/cu.usbmodem2101"
+        {:unix, :darwin} -> "/dev/cu.usbmodem101"
       end
     end
 
