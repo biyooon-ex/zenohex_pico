@@ -18,16 +18,17 @@ defmodule ZenohexPico.SubscriberTest do
     assert :ok = Session.put(connect_session, "zenohex_pico/subscriber", "payload")
 
     assert_receive %ZenohexPico.Sample{
-      attachment: "",
-      congestion_control: :drop,
-      encoding: "zenoh/bytes",
-      express: false,
-      key_expr: "zenohex_pico/subscriber",
-      kind: :put,
-      payload: "payload",
-      priority: :data,
-      timestamp: nil
-    }
+                     attachment: "",
+                     congestion_control: :drop,
+                     encoding: "zenoh/bytes",
+                     express: false,
+                     key_expr: "zenohex_pico/subscriber",
+                     kind: :put,
+                     payload: "payload",
+                     priority: :data,
+                     timestamp: nil
+                   },
+                   1500
 
     assert :ok = Subscriber.undeclare(subscriber)
     assert {:error, :subscriber_undeclared} = Subscriber.undeclare(subscriber)
