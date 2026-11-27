@@ -218,16 +218,17 @@ defmodule ZenohexPico.NifTest do
       :ok = Nif.session_put(connect_session, "zenohex_pico/test", "payload", timestamp: timestamp)
 
       assert_receive %ZenohexPico.Sample{
-        attachment: "",
-        congestion_control: :drop,
-        encoding: "zenoh/bytes",
-        express: false,
-        key_expr: "zenohex_pico/test",
-        kind: :put,
-        payload: "payload",
-        priority: :data,
-        timestamp: ^timestamp
-      }
+                       attachment: "",
+                       congestion_control: :drop,
+                       encoding: "zenoh/bytes",
+                       express: false,
+                       key_expr: "zenohex_pico/test",
+                       kind: :put,
+                       payload: "payload",
+                       priority: :data,
+                       timestamp: ^timestamp
+                     },
+                     1500
 
       assert :ok = Nif.subscriber_undeclare(subscriber)
       assert {:error, :subscriber_undeclared} = Nif.subscriber_undeclare(subscriber)
